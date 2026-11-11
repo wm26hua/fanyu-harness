@@ -174,12 +174,13 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-it.each([false, true])('starts welcome onboarding without carrying update focus into login or skip (Windows update=%s)', async (updated) => {
+it.each([false, true])('opens the workspace on a fresh launch and reaches the welcome entry on sign-out (Windows update=%s)', async (updated) => {
   vi.resetModules()
   vi.clearAllMocks()
   state.preference = 'zh'
   state.hasApiKey = false
   state.operations = undefined
+  state.welcomeLocale = undefined
   state.accountState.mockResolvedValue({ status: 'signed-out', attempt: null, links: { usageUrl: '', topUpUrl: '' } })
   if (updated) vi.stubGlobal('process', { ...process, platform: 'win32', argv: ['desktop', '--updated'] })
   vi.useFakeTimers()
@@ -194,9 +195,7 @@ it.each([false, true])('starts welcome onboarding without carrying update focus 
   vi.stubEnv('DSH_DESKTOP_MANDATORY_UPDATE_CONFIG', undefined)
   vi.stubEnv('DSH_DESKTOP_UPDATE_JOURNAL_DIR', undefined)
   const reading = Promise.withResolvers<undefined>()
-  const loading = Promise.withResolvers<undefined>()
   state.beforeRead.mockReturnValueOnce(reading.promise)
-  state.beforeWelcome.mockReturnValueOnce(loading.promise)
   const activate = () => {
     state.appListeners.get('second-instance')!()
     state.appListeners.get('open-url')!({ preventDefault: vi.fn() }, 'dsh://open')
@@ -207,24 +206,32 @@ it.each([false, true])('starts welcome onboarding without carrying update focus 
     activate()
     expect(state.showWorkspace).not.toHaveBeenCalled()
     reading.resolve(undefined)
-    await vi.waitFor(() => { expect(state.beforeWelcome).toHaveBeenCalledOnce() })
-    activate()
-    expect(state.showWorkspace).not.toHaveBeenCalled()
+    // A first launch has neither credential nor key, and still opens the workspace.
+    await vi.waitFor(() => { expect(state.showWorkspace).toHaveBeenCalledOnce() })
+    expect(state.beforeWelcome).not.toHaveBeenCalled()
+    expect(state.welcomeLocale).toBeUndefined()
   } finally {
     reading.resolve(undefined)
-    loading.resolve(undefined)
   }
-  await vi.waitFor(() => { expect(state.operations).toBeDefined() })
   expect(state.startHost).toHaveBeenCalledOnce()
   expect(state.loadWorkspace).toHaveBeenCalledExactlyOnceWith('dsh-app://app/')
-  expect(state.showWorkspace).not.toHaveBeenCalled()
   state.loadWorkspace.mockClear()
-  expect(state.welcomeLocale).toMatchObject({ id: 'zh-CN' })
-  expect(await state.operations!.takeNotice()).toBeUndefined()
-  expect(state.dialogLocale!().id).toBe('zh-CN')
+  // A post-update launch raises the workspace once, which consumes the pending raise.
+  expect(state.moveTopWorkspace).toHaveBeenCalledTimes(updated ? 1 : 0)
+  expect(state.focusWorkspace).toHaveBeenCalledTimes(updated ? 1 : 0)
+  state.moveTopWorkspace.mockClear()
+  state.focusWorkspace.mockClear()
   const attemptId = 'login' as NonNullable<AccountView['attempt']>['id']
   const account: AccountView = { status: 'signed-out', links: { usageUrl: '', topUpUrl: '' },
     attempt: { id: attemptId, phase: 'waiting-browser', authorizeUrl: 'https://example.test/login' } }
+  // Signing out without a separately configured key is what opens the welcome entry.
+  state.accountListener!({ ...account, status: 'credential-stored', attempt: null })
+  state.accountListener!({ ...account, status: 'signed-out', attempt: null })
+  await vi.waitFor(() => { expect(state.beforeWelcome).toHaveBeenCalledOnce() })
+  await vi.waitFor(() => { expect(state.operations).toBeDefined() })
+  expect(state.welcomeLocale).toMatchObject({ id: 'zh-CN' })
+  expect(await state.operations!.takeNotice()).toBeUndefined()
+  expect(state.dialogLocale!().id).toBe('zh-CN')
   state.accountState.mockResolvedValue(account)
   await state.operations!.copySignInLink(attemptId)
   expect(state.copy).toHaveBeenCalledExactlyOnceWith('https://example.test/login?theme=light')
@@ -238,7 +245,8 @@ it.each([false, true])('starts welcome onboarding without carrying update focus 
   expect(state.copy).toHaveBeenCalledTimes(2)
   await state.operations!.skip()
   expect(state.loadWorkspace).not.toHaveBeenCalled()
-  expect(state.showWorkspace).toHaveBeenCalledOnce()
+  // The launch already showed the workspace; skip closes the entry and shows it again.
+  expect(state.showWorkspace).toHaveBeenCalledTimes(2)
   expect(state.moveTopWorkspace).not.toHaveBeenCalled()
   expect(state.focusWorkspace).not.toHaveBeenCalled()
   expect(state.windowOptions).toMatchObject({
@@ -247,7 +255,7 @@ it.each([false, true])('starts welcome onboarding without carrying update focus 
   })
   expect(state.closeWelcome).toHaveBeenCalledOnce()
   activate()
-  expect(state.showWorkspace).toHaveBeenCalledTimes(3)
+  expect(state.showWorkspace).toHaveBeenCalledTimes(4)
   expect(state.quit).not.toHaveBeenCalled()
   expect(state.stopHost).not.toHaveBeenCalled()
   const contents = state.contents as { mainFrame: { url: string }; send: ReturnType<typeof vi.fn> }

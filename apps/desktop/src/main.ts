@@ -1432,13 +1432,9 @@ async function main(): Promise<void> {
     writeDesktopLocaleCache(app.getPath('userData'), locale.id)
     windowsLanguage = locale.id
     refreshApplicationMenu()
-    if (!enteredWorkspace && needsWelcome({ loggedIn: state.loggedIn, hasApiKey: state.hasApiKey })) {
-      // A later login must retain its own activation policy instead of replaying startup focus.
-      raiseAfterUpdate = false
-      await showWelcome()
-    } else {
-      await enterWorkspace()
-    }
+    // The workspace opens on every launch, including a first launch with no credential or key;
+    // the welcome entry remains the sign-out destination and the account menu owns in-app sign-in.
+    await enterWorkspace()
   }
   focusPrimaryWindow = () => {
     if (quitting) return
