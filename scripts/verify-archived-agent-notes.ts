@@ -24,6 +24,9 @@ const archiveRoot = resolve(agentNoteRoot, 'archived')
 const manifestPath = resolve(archiveRoot, 'manifest.json')
 const repoRoot = resolve(agentNoteRoot, '../..')
 const manifestRepoPath = '.agents/notes/archived/manifest.json'
+// This checkout keeps the project one level below the git root, so the `git show` paths below are
+// written cwd-relative (`./…`); git resolves those against the process directory, not the top level.
+const manifestGitPath = `./${manifestRepoPath}`
 const errors: string[] = []
 const allowedRootFiles = new Set(['AGENTS.md', 'manifest.json'])
 const kinds = new Set<string>()
@@ -67,9 +70,9 @@ function runGit(args: string[]): string {
 
 function readBaselineManifest(ref: string): ArchiveManifest {
   runGit(['cat-file', '-e', `${ref}^{commit}`])
-  const manifestEntry = runGit(['ls-tree', '--name-only', ref, '--', manifestRepoPath]).trim()
+  const manifestEntry = runGit(['ls-tree', '--name-only', ref, '--', manifestGitPath]).trim()
   if (manifestEntry === '') return { version: 1, files: {} }
-  return parseArchiveManifest(runGit(['show', `${ref}:${manifestRepoPath}`]))
+  return parseArchiveManifest(runGit(['show', `${ref}:${manifestGitPath}`]))
 }
 
 let manifest: ArchiveManifest = { version: 1, files: {} }
