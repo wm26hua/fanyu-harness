@@ -1,8 +1,10 @@
-# DeepSeek Harness
+# Fanyu harness
 
 English | [中文](README.zh.md)
 
-DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
+Fanyu harness is 泛语科技's distribution of DeepSeek Harness (`dsh`), the open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
+
+Fanyu harness is **built on DeepSeek Harness** and is not affiliated with, sponsored by, or endorsed by DeepSeek. "DeepSeek Harness" is a trademark of DeepSeek, used here only to describe this project's upstream.
 
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
 
@@ -39,6 +41,10 @@ pnpm dsh web
 ```
 
 `pnpm run build` prepares the repository artifacts. `pnpm dsh web` uses those built artifacts without rebuilding.
+
+## How this fork is maintained
+
+Fanyu harness is developed and released by 泛语科技; 泛语科技 owns the packaged installers, the product name, and the release channels. The codebase tracks upstream DeepSeek Harness, so internal package names (`@deepseek-ai/*`), the `dsh` command, the `dsh` URL scheme, environment variables (`DSH_*`), the `~/.dsh` home, and update feed identifiers stay as upstream defines them and are not renamed by this fork.
 
 ## Community and support
 

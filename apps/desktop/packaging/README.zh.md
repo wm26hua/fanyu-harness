@@ -95,9 +95,10 @@ pnpm run package:desktop
 pnpm run package:desktop:mac:arm64
 pnpm run package:desktop:mac:x64
 pnpm run package:desktop:win:x64
+pnpm run package:desktop:linux:x64
 ```
 
-macOS arm64 命令要求 Apple Silicon。macOS x64 命令可以在 Intel macOS 或带 Rosetta 的 Apple Silicon 上运行。Windows x64 命令要求 Windows x64。Linux 不是受支持的 Desktop 发布目标。
+macOS arm64 命令要求 Apple Silicon。macOS x64 命令可以在 Intel macOS 或带 Rosetta 的 Apple Silicon 上运行。Windows x64 命令要求 Windows x64。Linux x64 命令要求 Linux x64，产出 AppImage、deb 与 tar.gz。Linux 目标由本下游仓库补充；`--unsigned` 在 Linux 上与 macOS 同义，因此本地打 Linux 包不需要 `.env.linux`、不需要更新部署、也不需要任何凭证。Linux 发行模式会读取 `apps/desktop/.env.linux`，本仓库暂未提供该文件。
 
 macOS 正式发布和本地未签名 DMG 都通过 [electron-builder 配置](../scripts/electron-builder-config.mjs)中的 `dmg.format: 'ULMO'` 使用 LZMA 压缩。[构建时补丁](../../../patches/app-builder-lib@26.17.0.patch)为固定版本 builder 的校验规则和 TypeScript 声明添加此格式。
 

@@ -1,14 +1,14 @@
 ---
-description: "Desktop runs the Harness workspace in a native application. This reference covers application behavior, development and integration; the packaging, Windows signing and publication guides own build and release operations."
+description: "Desktop runs the Harness workspace in a native application. This reference covers application behavior, development and integration; the packaging, Windows signing and publication guides own build and release operations. The packaged application and its installer identify as Fanyu harness, 泛语科技's build of DeepSeek Harness (`dsh`), and are not affiliated with or endorsed by DeepSeek."
 ---
 
-# DeepSeek Harness Desktop
+# Fanyu harness Desktop
 
 English | [中文](README.zh.md)
 
 ## Summary
 
-Desktop runs the Harness workspace in a native application. This reference covers application behavior, development and integration; the packaging, Windows signing and publication guides own build and release operations.
+Desktop runs the Harness workspace in a native application. This reference covers application behavior, development and integration; the packaging, Windows signing and publication guides own build and release operations. The packaged application and its installer identify as Fanyu harness, 泛语科技's build of DeepSeek Harness (`dsh`), and are not affiliated with or endorsed by DeepSeek.
 
 ## Table of Contents
 
@@ -213,9 +213,9 @@ Dependency installation does not run the locked Electron package's separate bina
 
 The API-key input starts empty and uses `autocomplete="new-password"` to ask Chromium not to autofill saved login passwords.
 
-Repeated launches and `dsh://open` keep the workspace hidden until the startup credential check or a welcome action permits entry. Entering from Welcome places keyboard focus on the document without selecting a sidebar control; Tab navigation remains available.
+Repeated launches and `dsh://open` show the workspace. Entering from Welcome places keyboard focus on the document without selecting a sidebar control; Tab navigation remains available.
 
-Desktop checks configured model API-key references after the Host starts and before opening the workspace. With no configured key, the welcome window offers the API-key page. Save and continue writes through the existing credential service using the official DeepSeek provider's configured reference, then opens the workspace. Set up later opens the workspace without saving the draft or a completion setting; the next process launch checks credentials again. Back to sign in returns to the entry and clears the unsaved key and validation message. Buttons keep their labels and block competing actions while saving or opening the workspace. The Desktop preload marker suppresses the Web credential dialog, while retaining the Models settings page and the welcome notice.
+Desktop opens the workspace on every launch, including a first launch with no configured model API key; the account menu offers sign-in and the Models settings page keeps its API-key form. The 600 × 700 welcome entry is the destination of a sign-out without a separately configured API key. Save and continue writes through the existing credential service using the official DeepSeek provider's configured reference, then opens the workspace. Set up later opens the workspace without saving the draft or a completion setting; the next process launch checks credentials again. Back to sign in returns to the entry and clears the unsaved key and validation message. Buttons keep their labels and block competing actions while saving or opening the workspace. The Desktop preload marker suppresses the Web credential dialog, while retaining the Models settings page and the welcome notice.
 
 The welcome window reads the shared `locale.preference` before it appears. An explicit supported language choice wins; otherwise Desktop picks the first supported OS language and falls back to English. The main UI reads the same preference and OS language order through its isolated preload before mounting. Language changes in Settings update the shell’s current dictionary and menu; automatic selection writes no preference. The welcome window has no language selector.
 

@@ -1,8 +1,10 @@
-# DeepSeek Harness
+# Fanyu harness
 
 [English](README.md) | 中文
 
-DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
+Fanyu harness 是泛语科技基于 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）DeepSeek Harness（`dsh`）构建的发行版。
+
+Fanyu harness **基于 DeepSeek Harness 构建**，与 DeepSeek 不存在隶属、赞助或背书关系。“DeepSeek Harness” 是 DeepSeek 的商标，此处仅用于说明本项目的上游来源。
 
 它构建于**一切皆插件**的架构之上，由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512)。
 
@@ -43,6 +45,10 @@ pnpm dsh web
 ```
 
 `pnpm run build` 会准备仓库产物。`pnpm dsh web` 会直接使用这些已构建产物，不会重新构建。
+
+## 本分支的维护方式
+
+Fanyu harness 由泛语科技开发和发布；安装包、产品名称与发布渠道由泛语科技负责。代码库跟随上游 DeepSeek Harness，因此内部包名（`@deepseek-ai/*`）、`dsh` 命令、`dsh` URL scheme、环境变量（`DSH_*`）、`~/.dsh` 主目录和更新源标识保持与上游一致，本分支不做重命名。
 
 ## 社区与支持
 

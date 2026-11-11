@@ -95,9 +95,10 @@ Release automation uses fixed target commands so runtime preparation, dsh prepar
 pnpm run package:desktop:mac:arm64
 pnpm run package:desktop:mac:x64
 pnpm run package:desktop:win:x64
+pnpm run package:desktop:linux:x64
 ```
 
-The macOS arm64 command requires Apple Silicon. The macOS x64 command runs on Intel macOS or Apple Silicon with Rosetta. The Windows x64 command requires Windows x64. Linux is not a supported Desktop release target.
+The macOS arm64 command requires Apple Silicon. The macOS x64 command runs on Intel macOS or Apple Silicon with Rosetta. The Windows x64 command requires Windows x64. The Linux x64 command requires Linux x64 and produces an AppImage, a deb and a tar.gz. This fork adds the Linux target; `--unsigned` works on Linux exactly as on macOS, so a local Linux package needs no `.env.linux`, no update deployment and no credential. A release-mode Linux build reads `apps/desktop/.env.linux`, which this fork does not ship yet.
 
 Both release and local unsigned macOS DMGs use LZMA compression (`dmg.format: 'ULMO'`) in [the electron-builder configuration](../scripts/electron-builder-config.mjs). A [build-time patch](../../../patches/app-builder-lib@26.17.0.patch) adds this format to the pinned builder's validation and TypeScript declarations.
 
