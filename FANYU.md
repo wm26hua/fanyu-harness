@@ -15,7 +15,7 @@ Fanyu harness is developed by 泛语科技 and built on DeepSeek Harness (`dsh`)
 
 ## 仓库布局
 
-git 根目录是**工作区根**（`fanyu-harness/` 的上一级），`fanyu-harness/` 是代码子目录。仓库只跟踪 `fanyu-harness/`、`README.md` 与 `.gitignore`，其余（`.tmp/`、`logs/`、`artifacts/`、`tools/`、`.cache/`、`node_modules/`、`.desktop-build/`）全部忽略。
+git 根目录是**工作区根**（`fanyu-harness/` 的上一级），`fanyu-harness/` 是代码子目录。仓库只跟踪 `fanyu-harness/`、`README.md` 与 `.gitignore`，其余（`logs/`、`artifacts/`、`tools/`、`.cache/`、`node_modules/`、`.desktop-build/`）全部忽略。
 
 - `git` 命令在**工作区根目录**执行
 - `pnpm` / `npm` 命令在 **`fanyu-harness/`** 内执行
@@ -43,7 +43,7 @@ git 根目录是**工作区根**（`fanyu-harness/` 的上一级），`fanyu-har
 
 ### 3. Linux 打包支持与无签名构建
 
-- 新增 `linux-x64` / `linux-arm64` 打包目标（`AppImage` + `deb` + `tar.gz`），来自社区第三方 Linux 打包方案的移植（参见工作区 `.tmp/deepseek-harness-linux` 参照副本），并适配到当前上游基线。
+- 新增 `linux-x64` / `linux-arm64` 打包目标（`AppImage` + `deb` + `tar.gz`），来自社区第三方 Linux 打包方案的移植（参照副本存放在工作区外的 `~/fanyu-refs/deepseek-harness-linux`），并适配到当前上游基线。
 - `--unsigned` 在 Linux 上与 macOS 同义：完全不读 `.env.linux`、不注入强制更新策略、不需要任何凭证。强制更新策略只在真正发行它的平台（win32、已签名的 darwin）注入，因为带策略的 Linux 包会在启动时因 "unsupported platform" 直接弹致命错误对话框。
 - Linux 侧的运行时细节已处理：Electron 二进制路径、`chmod`、libfuse2 工具链探测、解包目录/资源目录/可执行文件名解析、Linux 上跳过 Office 转换检查、`linux-package` 阶段与 `DSH_DESKTOP_LINUX_PACK_CONCURRENCY`。
 
