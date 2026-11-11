@@ -11,4 +11,12 @@ while [ -L "$launcher" ]; do
   esac
 done
 resources=$(CDPATH= cd -- "$(dirname -- "$launcher")/../../.." && pwd -P)
-ELECTRON_RUN_AS_NODE=1 exec "$resources/../MacOS/DeepSeek Harness" --expose-internals "$resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js" "$@"
+# The Electron executable sits inside the macOS bundle, but beside the resources directory in the
+# Linux deb, tar.gz and AppImage layouts. Both names come from apps/desktop/scripts/desktop-product-identity.mjs,
+# which electron-builder also reads; this static launcher cannot import it, so keep the two in sync.
+if [ -x "$resources/../MacOS/Fanyu harness" ]; then
+  application="$resources/../MacOS/Fanyu harness"
+else
+  application="$resources/../fanyu-harness"
+fi
+ELECTRON_RUN_AS_NODE=1 exec "$application" --expose-internals "$resources/app.asar/dsh/node_modules/@deepseek-ai/dsh-desktop-host/lib/cli.js" "$@"
