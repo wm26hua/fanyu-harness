@@ -33,7 +33,26 @@ git 根目录是**工作区根**（`fanyu-harness/` 的上一级），`fanyu-har
 - `copyright` 为 `Copyright © 2026 泛语科技`；`apps/desktop/package.json` 的 `author` 为 `泛语科技 <dev@fanyu.tech>`（deb/FPM maintainer 来源）。
 - Windows 安装器 8 种语言文案、安装失败报告标题、macOS 应用包名、Windows 可执行文件名与 `dsh` 命令行入口同步改名。
 - **图标仍沿用原有小鲸鱼图标**，所有图标与品牌美术资源字节未改动。
-- 身份字符串集中在一处：`apps/desktop/scripts/desktop-product-identity.mjs`（`DESKTOP_PRODUCT_NAME`、`DESKTOP_ARTIFACT_PREFIX`），所有产物名与路径从这里派生，避免改名后生产者与消费者不一致。
+- 身份字符串集中在一处：`apps/desktop/scripts/desktop-product-identity.mjs`（`DESKTOP_PRODUCT_NAME`、`DESKTOP_ARTIFACT_PREFIX`、`DESKTOP_EXECUTABLE_NAME`、`DESKTOP_PROTOCOL_SCHEME`），所有产物名与路径从这里派生，避免改名后生产者与消费者不一致。
+
+#### 机器可读名统一为 `fyh`，显示名仍是 Fanyu harness
+
+上游把目录与协议都命名成 `dsh`，结果本发行版与官方版在同一台机器上会**共用同一份用户数据**。本发行版把机器可读名统一成 `fyh`：
+
+| 用途 | 上游默认 | 本发行版 |
+| --- | --- | --- |
+| Windows 可执行文件 | `Fanyu harness.exe` | `fyh.exe`（`win.executableName = DESKTOP_EXECUTABLE_NAME`） |
+| Windows 安装目录 | `%LOCALAPPDATA%\Programs\Fanyu harness` | `%LOCALAPPDATA%\Programs\fyh` |
+| 应用数据 userData | `%APPDATA%\@deepseek-ai\dsh-desktop` | `%APPDATA%\fyh`（打包清单 `name` = `fyh`） |
+| 更新缓存 | `%LOCALAPPDATA%\@deepseek-aidsh-desktop-updater` | `%LOCALAPPDATA%\fyh-updater` |
+| Harness 主目录 | `~/.dsh` | `~/.fyh`（`packages/util/home-paths` 的 `DSH_HOME_DIR_NAME`） |
+| 深链协议 | `dsh://` | `fyh://` |
+
+显示名不动：窗口标题、安装器 8 种语言文案、开始菜单/桌面快捷方式名、卸载显示名仍是 **Fanyu harness**。
+
+改名的连带影响都跟随同一处常量：Windows 命令行入口 `apps/desktop/cli/dsh.cmd` 指向 `fyh.exe`；`smoke-packaged-runtime.ts` 按 `DESKTOP_EXECUTABLE_NAME` 定位可执行文件；`main.ts` 注册 `fyh://` 深链。测试基线同步在 `apps/desktop/tests/{cli-launcher,command-management,macos-signature,welcome-startup}.spec.ts`、`apps/desktop/tests/expected/command-management-win32-*.json`、`packages/util/home-paths/tests`、`packages/shell/shell-env/tests`。
+
+注意：**升级影响**——`~/.dsh` 与 `%APPDATA%` 下的旧数据不会自动迁移，改名后的首次启动会重新生成 profiles、凭据与设置。
 
 ### 2. 首次启动直接进入工作区（去掉登录页）
 

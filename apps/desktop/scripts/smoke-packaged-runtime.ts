@@ -2,7 +2,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
-import { DESKTOP_ARTIFACT_PREFIX, DESKTOP_PRODUCT_NAME } from './desktop-product-identity.mjs'
+import { DESKTOP_ARTIFACT_PREFIX, DESKTOP_EXECUTABLE_NAME, DESKTOP_PRODUCT_NAME } from './desktop-product-identity.mjs'
 import { desktopArtifactOutput, resolveDesktopBuildTarget, resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
 import { readDesktopRuntime, verifyDesktopRuntime } from '../src/runtime-tree.ts'
 import { verifyWindowsCode } from './windows-runtime-signature.mjs'
@@ -26,7 +26,7 @@ const application = windows ? join(artifacts, 'win-unpacked')
   : linux ? existsSync(linuxUnpacked) ? linuxUnpacked : join(artifacts, 'linux-unpacked')
     : join(artifacts, target === 'mac-arm64' ? 'mac-arm64' : 'mac', `${DESKTOP_PRODUCT_NAME}.app`, 'Contents')
 const resources = join(application, windows || linux ? 'resources' : 'Resources')
-const executable = windows ? join(application, `${DESKTOP_PRODUCT_NAME}.exe`)
+const executable = windows ? join(application, `${DESKTOP_EXECUTABLE_NAME}.exe`)
   // electron-builder uses the configured Linux executable name, which is the artifact prefix.
   : linux ? join(application, DESKTOP_ARTIFACT_PREFIX)
     : join(application, 'MacOS', DESKTOP_PRODUCT_NAME)

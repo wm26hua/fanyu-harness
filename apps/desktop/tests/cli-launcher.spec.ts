@@ -24,7 +24,7 @@ function fixture() {
   const resources = join(application, ...platform === 'darwin' ? ['Contents', 'Resources'] : ['resources'])
   const cli = join(resources, 'runtime', 'cli')
   prepareDesktopCli(cli, platform)
-  const electron = join(application, ...platform === 'darwin' ? ['Contents', 'MacOS', 'Fanyu harness'] : ['Fanyu harness.exe'])
+  const electron = join(application, ...platform === 'darwin' ? ['Contents', 'MacOS', 'Fanyu harness'] : ['fyh.exe'])
   mkdirSync(dirname(electron), { recursive: true })
   if (platform === 'win32') copyFileSync(process.execPath, electron)
   else symlinkSync(process.execPath, electron)

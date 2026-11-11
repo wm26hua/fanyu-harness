@@ -29,7 +29,7 @@ import { installWindowsDirectoryInstaller } from './windows-directory-installer.
 import { preserveWindowsRuntimeSignature, signWindowsCode } from './windows-runtime-signature.mjs'
 import { prepareWindowsAsarUnpack, verifyWindowsAsarUnpack } from './windows-asar-unpack.mjs'
 import { recordPackagingEvent } from './packaging-run.mjs'
-import { DESKTOP_ARTIFACT_PREFIX, DESKTOP_PRODUCT_NAME } from './desktop-product-identity.mjs'
+import { DESKTOP_ARTIFACT_PREFIX, DESKTOP_EXECUTABLE_NAME, DESKTOP_PRODUCT_NAME, DESKTOP_PROTOCOL_SCHEME } from './desktop-product-identity.mjs'
 import {
   resolveMacOSAppUpdateFeed,
   verifyMacOSAppUpdateConfig,
@@ -115,8 +115,12 @@ export function createElectronBuilderConfig(
   const packaged = resolveDesktopBuildCommit(env)
   return {
     appId,
-    protocols: [{ name: 'Fanyu harness', schemes: ['dsh'] }],
+    protocols: [{ name: DESKTOP_PRODUCT_NAME, schemes: [DESKTOP_PROTOCOL_SCHEME] }],
     extraMetadata: {
+      // Electron derives the per-user application data directory and the updater cache directory from the
+      // packaged manifest name, not from productName. Pinning it keeps this release's profiles, credentials
+      // and update cache out of the upstream application's directories on the same machine.
+      name: DESKTOP_EXECUTABLE_NAME,
       dshDesktopAppId: appId,
       dshDesktopUpdateChannel: update?.channel ?? 'nightly',
       ...(policy === undefined ? {} : { dshMandatoryUpdatePolicy: policy }),
@@ -254,6 +258,10 @@ export function createElectronBuilderConfig(
     },
     win: {
       icon: fileURLToPath(new URL('../resources/icon-windows.png', import.meta.url)),
+      // The executable name is also the default per-user installation directory name
+      // (`%LOCALAPPDATA%\Programs\<name>`), so it carries the short brand instead of the spaced
+      // product name. Shortcut and uninstall display names keep using productName.
+      executableName: DESKTOP_EXECUTABLE_NAME,
       forceCodeSigning: !unsigned,
       signtoolOptions: {
         sign: windowsSigner,
