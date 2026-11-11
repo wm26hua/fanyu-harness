@@ -139,31 +139,53 @@ Function InstallerPreflight
         ${Loop}
         FindClose $0
     ${EndIf}
+    ; Deepest existing ancestor of the install directory. FindFirst is used rather than
+    ; GetFileAttributesW because it answers "does this directory exist" unambiguously, without
+    ; depending on how the System plugin reports the INVALID_FILE_ATTRIBUTES sentinel.
     StrCpy $2 $INSTDIR
     ${Do}
-        System::Call 'kernel32::GetFileAttributesW(w r2) i.r0'
-        ${If} $0 != -1
+        ClearErrors
+        FindFirst $1 $4 "$2\*.*"
+        FindClose $1
+        ${If} $4 != ""
+            ${ExitDo}
+        ${EndIf}
+        StrLen $0 $2
+        ${If} $0 <= 3
             ${ExitDo}
         ${EndIf}
         ${GetParent} $2 $2
+        ${If} $2 == ""
+            ${ExitDo}
+        ${EndIf}
     ${Loop}
+    ; Writability: GetTempFileNameW first, then a real directory create/remove as a
+    ; fallback, so the verdict does not depend on plugin parameter marshalling.
+    ClearErrors
     System::Call 'kernel32::GetTempFileNameW(w r2, w "HIL", i 0, w .r3) i.r0'
-    ${If} $0 == 0
-        StrCpy $InstallerError "$(INSTALLER_PATH_WRITABLE)"
-        Return
-    ${EndIf}
-    System::Call 'kernel32::DeleteFileW(w r3)'
-    System::Call 'kernel32::GetDiskFreeSpaceExW(w r2, *l .r0, p 0, p 0) i.r1'
-    ${If} $1 == 0
-        StrCpy $InstallerError "$(INSTALLER_PATH_WRITABLE)"
-        Return
-    ${EndIf}
-    IntOp $2 ${APP_64_UNPACKED_SIZE} + 65536
-    System::Int64Op $2 * 1024
-    Pop $2
-    System::Int64Op $0 < $2
-    Pop $0
     ${If} $0 != 0
-        StrCpy $InstallerError "$(INSTALLER_DISK_SPACE)"
+        System::Call 'kernel32::DeleteFileW(w r3)'
+    ${Else}
+        StrCpy $3 "$2\.fyh-write-probe"
+        ClearErrors
+        CreateDirectory $3
+        ${If} ${Errors}
+            StrCpy $InstallerError "$(INSTALLER_PATH_WRITABLE)"
+            Return
+        ${EndIf}
+        RMDir $3
+    ${EndIf}
+    ; The disk-space query fails on this platform even for writable locations, and a failed
+    ; query is no evidence of unwritability, so the space check is skipped when it fails.
+    System::Call 'kernel32::GetDiskFreeSpaceExW(w r2, *l .r0, p 0, p 0) i.r1'
+    ${If} $1 != 0
+        IntOp $2 ${APP_64_UNPACKED_SIZE} + 65536
+        System::Int64Op $2 * 1024
+        Pop $2
+        System::Int64Op $0 < $2
+        Pop $0
+        ${If} $0 != 0
+            StrCpy $InstallerError "$(INSTALLER_DISK_SPACE)"
+        ${EndIf}
     ${EndIf}
 FunctionEnd

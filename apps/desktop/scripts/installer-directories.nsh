@@ -11,6 +11,7 @@ Var dshDirectoryDestination
 Var dshRestoreError
 Var dshDirectoryLogDirectory
 Var dshRecoveryStopped
+Var dshInstallRoot
 
 ; MoveFileEx preserves the destination and exposes the Windows error before rollback changes it.
 ; Open files inside a directory can make its rename return access denied (5).
@@ -110,6 +111,12 @@ Var dshRecoveryStopped
   StrCpy $dshDirectoryError 0
   StrCpy $dshRestoreError 0
   StrCpy $dshRecoveryStopped ""
+  ${GetParent} $dshNewDirectory $dshInstallRoot
+  ${If} $dshInstallRoot != ""
+    ; CreateDirectory creates a single level only, and a per-user install root such as
+    ; %LOCALAPPDATA%\Programs is absent on a fresh profile.
+    CreateDirectory $dshInstallRoot
+  ${EndIf}
   ClearErrors
   CreateDirectory $dshNewDirectory
   ${If} ${Errors}
