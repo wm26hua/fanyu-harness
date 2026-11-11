@@ -4,6 +4,7 @@ import {
   desktopElectronBuilderEnvironment,
   parseDesktopPackageInvocation,
   resolveDesktopPackageTarget,
+  resolveRuntimeSmokeDeferral,
   withoutDesktopUploadCredentials,
   withoutWindowsSigningEnvironment,
 } from '../scripts/package-target.ts'
@@ -19,17 +20,30 @@ describe('desktop package target', () => {
     expect(resolveDesktopPackageTarget('win-x64', 'win32', 'x64')).toMatchObject({
       platform: 'win32', arch: 'x64', builderPlatform: '--win', builderArch: '--x64',
     })
+    expect(resolveDesktopPackageTarget('linux-x64', 'linux', 'x64')).toMatchObject({
+      platform: 'linux', arch: 'x64', builderPlatform: '--linux', builderArch: '--x64',
+    })
+    expect(resolveDesktopPackageTarget('linux-arm64', 'linux', 'arm64')).toMatchObject({
+      platform: 'linux', arch: 'arm64', builderPlatform: '--linux', builderArch: '--arm64',
+    })
   })
 
   it('allows an Apple Silicon host to build the Intel target through Rosetta', () => {
     expect(resolveDesktopPackageTarget('mac-x64', 'darwin', 'arm64').arch).toBe('x64')
   })
 
+  it('permits the documented cross-build of linux-arm64 on an x64 Linux host', () => {
+    expect(resolveDesktopPackageTarget('linux-arm64', 'linux', 'x64').arch).toBe('arm64')
+    expect(() => resolveDesktopPackageTarget('linux-x64', 'linux', 'arm64')).toThrow(/x64 Linux/u)
+  })
+
   it('rejects unsupported targets and hosts before building', () => {
-    expect(() => resolveDesktopPackageTarget('linux-x64', 'linux', 'x64')).toThrow(/unsupported target/u)
+    expect(() => resolveDesktopPackageTarget('linux-ppc64', 'linux', 'ppc64')).toThrow(/unsupported target/u)
     expect(() => resolveDesktopPackageTarget('win-x64', 'darwin', 'arm64')).toThrow(/Windows x64/u)
     expect(() => resolveDesktopPackageTarget('mac-arm64', 'darwin', 'x64')).toThrow(/Apple Silicon/u)
     expect(() => resolveDesktopPackageTarget('mac-arm64', 'linux', 'arm64')).toThrow(/macOS/u)
+    expect(() => resolveDesktopPackageTarget('linux-x64', 'darwin', 'arm64')).toThrow(/Linux build host/u)
+    expect(() => resolveDesktopPackageTarget('linux-x64', 'win32', 'x64')).toThrow(/Linux build host/u)
     expect(() => resolveDesktopPackageTarget('mac-x64', 'darwin', 'ppc64')).toThrow(/Rosetta/u)
   })
 
@@ -82,6 +96,13 @@ describe('desktop package target', () => {
     for (const name of ['mac-arm64', 'mac-x64']) {
       expect(parseDesktopPackageInvocation([name, '--unsigned'], 'darwin', 'arm64').unsigned).toBe(true)
       expect(parseDesktopPackageInvocation([name, '--unsigned', '--dir'], 'darwin', 'arm64').directory).toBe(true)
+    }
+    // A Linux package carries no signature, so the local unsigned path is the one that needs no
+    // release configuration at all; it is available there exactly as it is on macOS.
+    for (const [name, arch] of [['linux-x64', 'x64'], ['linux-arm64', 'arm64']] as const) {
+      expect(parseDesktopPackageInvocation([name, '--unsigned'], 'linux', arch).unsigned).toBe(true)
+      expect(parseDesktopPackageInvocation([name], 'linux', arch).unsigned).toBe(false)
+      expect(parseDesktopPackageInvocation([name, '--unsigned', '--dir'], 'linux', arch).directory).toBe(true)
     }
     expect(() => parseDesktopPackageInvocation(['--unsigned', '--prepare-only'], 'win32', 'x64'))
       .toThrow(/cannot use --prepare-only/u)
@@ -156,4 +177,35 @@ it('allows skipping notarization only for signed macOS packages', () => {
     expect(() => parseDesktopPackageInvocation(['mac-arm64', '--skip-notarization', flag], 'darwin', 'arm64')).toThrow(/requires a signed macOS build/u)
   }
   expect(() => parseDesktopPackageInvocation(['win-x64', '--skip-notarization'], 'win32', 'x64')).toThrow(/requires a signed macOS build/u)
+  expect(() => parseDesktopPackageInvocation(['linux-x64', '--skip-notarization'], 'linux', 'x64')).toThrow(/requires a signed macOS build/u)
+})
+
+describe('runtime payload smoke deferral', () => {
+  it('runs the payload lane by default on every target', () => {
+    expect(resolveRuntimeSmokeDeferral({}, false)).toEqual({
+      deferred: false, prepareArguments: [], packagedArguments: [],
+    })
+    expect(resolveRuntimeSmokeDeferral({ DSH_DESKTOP_DEFER_RUNTIME_SMOKE: '0' }, false)).toEqual({
+      deferred: false, prepareArguments: [], packagedArguments: [],
+    })
+  })
+
+  it('defers both lanes only when the build host asks for it', () => {
+    expect(resolveRuntimeSmokeDeferral({ DSH_DESKTOP_DEFER_RUNTIME_SMOKE: '1' }, false)).toEqual({
+      deferred: true, prepareArguments: ['--defer-runtime-smoke'], packagedArguments: ['--defer-runtime-smoke'],
+    })
+  })
+
+  it('defers the preparation lane only, for a Windows run that signs the runtime afterwards', () => {
+    expect(resolveRuntimeSmokeDeferral({}, true)).toEqual({
+      deferred: false, prepareArguments: ['--defer-runtime-smoke'], packagedArguments: [],
+    })
+  })
+
+  it('rejects a deferral setting that is neither 0 nor 1', () => {
+    expect(() => resolveRuntimeSmokeDeferral({ DSH_DESKTOP_DEFER_RUNTIME_SMOKE: 'yes' }, false))
+      .toThrow(/DSH_DESKTOP_DEFER_RUNTIME_SMOKE must be 0 or 1/u)
+    expect(() => resolveRuntimeSmokeDeferral({ DSH_DESKTOP_DEFER_RUNTIME_SMOKE: '' }, false))
+      .toThrow(/DSH_DESKTOP_DEFER_RUNTIME_SMOKE must be 0 or 1/u)
+  })
 })
