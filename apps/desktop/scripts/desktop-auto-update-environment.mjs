@@ -33,15 +33,18 @@ const UPDATE_ENVIRONMENTS = {
   },
 }
 
-const UPDATE_TARGETS = new Set(['mac-arm64', 'mac-x64', 'win-x64'])
+const UPDATE_TARGETS = new Set(['mac-arm64', 'mac-x64', 'win-x64', 'linux-x64', 'linux-arm64'])
+const FIXED_INSTALLER_TARGETS = new Set(['mac-arm64', 'mac-x64', 'win-x64'])
 
 /**
  * Name the fixed installer object shared by uploading and cache refresh.
+ * Only macOS and Windows publish one fixed website installer; a Linux release ships the
+ * versioned AppImage, deb and tar.gz artifacts instead.
  * @param {'mac-arm64' | 'mac-x64' | 'win-x64'} target Supported Desktop target.
  * @returns {string} Fixed download filename.
  */
 export function desktopLatestInstallerFilename(target) {
-  if (!UPDATE_TARGETS.has(target)) throw new Error(`desktop upload: unsupported target ${target}`)
+  if (!FIXED_INSTALLER_TARGETS.has(target)) throw new Error(`desktop upload: ${String(target)} has no fixed website installer`)
   const windows = target === 'win-x64'
   return `dsh-latest-${windows ? 'windows' : 'macos'}-${target === 'mac-arm64' ? 'arm64' : 'x64'}.${windows ? 'exe' : 'dmg'}`
 }
@@ -72,7 +75,7 @@ export function resolveDesktopAutoUpdateEnvironment(env) {
  * Resolve one supported platform and architecture to its update directory.
  * @param {NodeJS.Platform} platform - Target Node.js platform.
  * @param {string} arch - Target Node.js architecture.
- * @returns {'mac-arm64' | 'mac-x64' | 'win-x64'} Update target directory.
+ * @returns {'mac-arm64' | 'mac-x64' | 'win-x64' | 'linux-x64' | 'linux-arm64'} Update target directory.
  */
 export function resolveDesktopAutoUpdateTarget(platform, arch) {
   const os = platform === 'darwin' ? 'mac' : platform === 'win32' ? 'win' : platform
@@ -85,7 +88,7 @@ export function resolveDesktopAutoUpdateTarget(platform, arch) {
 
 /**
  * Return the local completion record filename for one packaged target.
- * @param {'mac-arm64' | 'mac-x64' | 'win-x64'} target - Supported release target.
+ * @param {'mac-arm64' | 'mac-x64' | 'win-x64' | 'linux-x64' | 'linux-arm64'} target - Supported release target.
  * @returns {string} Filename stored beside electron-builder artifacts.
  */
 export function desktopBuildRecordFilename(target) {
@@ -100,17 +103,22 @@ export function desktopBuildRecordFilename(target) {
  * @param {string} version - Desktop semantic version.
  * @param {NodeJS.Platform} platform - Target platform.
  * @param {'nightly' | 'stable'} channel - Selected channel; omitted means nightly.
+ * @param {string} [arch] - Target architecture; electron-builder suffixes the Linux manifest for non-x64.
  * @returns {string} Channel metadata filename emitted for the target.
  */
-export function desktopUpdateMetadataFilename(version, platform, channel = 'nightly') {
+export function desktopUpdateMetadataFilename(version, platform, channel = 'nightly', arch) {
   if (valid(version) === null) {
     throw new Error(`desktop auto-update: invalid Desktop version ${JSON.stringify(version)}`)
   }
-  if (platform !== 'darwin' && platform !== 'win32') {
+  if (platform !== 'darwin' && platform !== 'win32' && platform !== 'linux') {
     throw new Error(`desktop auto-update: unsupported metadata platform ${platform}`)
   }
   resolveDesktopUpdateChannel({ DSH_DESKTOP_UPDATE_CHANNEL: channel })
-  return `${channel}${platform === 'darwin' ? '-mac' : ''}.yml`
+  // electron-builder names a Linux manifest after its architecture, and electron-updater requests
+  // the same name, so a non-x64 Linux build must not look for the x64 file.
+  const osSuffix = platform === 'darwin' ? '-mac' : platform === 'linux' ? '-linux' : ''
+  const archSuffix = platform === 'linux' && arch !== undefined && arch !== '' && arch !== 'x64' ? `-${arch}` : ''
+  return `${channel}${osSuffix}${archSuffix}.yml`
 }
 
 /**

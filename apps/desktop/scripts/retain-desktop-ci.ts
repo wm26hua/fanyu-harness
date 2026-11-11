@@ -6,8 +6,9 @@ import { desktopBuildRecordFilename, desktopUpdateMetadataFilename, resolveDeskt
 import { loadDesktopPackageEnvironment } from './desktop-package-environment.mjs'
 import { retainDesktopRelease, type DesktopRetainedSource } from './desktop-release-store.ts'
 import { validateDesktopBuildVersion } from './desktop-build-version.mjs'
-import { desktopPublishRunnersSchema } from './desktop-publish-targets.ts'
+import { desktopPublishRunnersSchema, isDesktopPublishTarget } from './desktop-publish-targets.ts'
 import { desktopPublishQualificationError } from './desktop-publish-qualification.mjs'
+import { DESKTOP_ARTIFACT_PREFIX } from './desktop-product-identity.mjs'
 
 function required(env: NodeJS.ProcessEnv, name: string): string {
   const value = env[name]
@@ -34,6 +35,7 @@ export function desktopReleasesRoot(env: NodeJS.ProcessEnv): string {
  */
 export function resolveDesktopRetentionRunner(env: NodeJS.ProcessEnv): string {
   const target = resolveDesktopBuildTarget(env)
+  if (!isDesktopPublishTarget(target)) throw new Error('desktop retention: this target has no publication route')
   const routes = desktopPublishRunnersSchema.parse(JSON.parse(required(env, 'DESKTOP_PUBLISH_RUNNERS')))
   const route = routes[required(env, 'RUNNER_NAME')]
   if (!route || !route.target.includes(target)
@@ -51,6 +53,7 @@ export function resolveDesktopRetentionRunner(env: NodeJS.ProcessEnv): string {
  */
 export async function retainDesktopCi(env: NodeJS.ProcessEnv, appRoot = resolve(import.meta.dirname, '..')): Promise<string> {
   const target = resolveDesktopBuildTarget(env)
+  if (!isDesktopPublishTarget(target)) throw new Error('desktop retention: this target has no publication route')
   const runnerLabel = resolveDesktopRetentionRunner(env)
   const windows = target === 'win-x64'
   const platform = windows ? 'win32' : 'darwin'
@@ -77,7 +80,7 @@ export async function retainDesktopCi(env: NodeJS.ProcessEnv, appRoot = resolve(
   const mode = qualification === 'unsigned' ? 'unsigned-artifacts' : qualification === 'unnotarized' ? 'unnotarized-artifacts' : 'artifacts'
   const artifacts = appRoot === resolve(import.meta.dirname, '..')
     ? join(paths.root, mode) : join(appRoot, '.desktop-build', 'targets', target, mode)
-  const base = `deepseek-harness-${version}-${windows ? 'win-x64' : target}`
+  const base = `${DESKTOP_ARTIFACT_PREFIX}-${version}-${windows ? 'win-x64' : target}`
   const debugSuffix = qualification === 'unnotarized' ? '-unnotarized' : qualification === 'unsigned' ? '-unsigned' : ''
   const names = windows ? [`${base}${debugSuffix}.exe`] : [`${base}${debugSuffix}.dmg`, `${base}${debugSuffix}.zip`]
   if (qualification === 'signed' || qualification === 'notarized') {

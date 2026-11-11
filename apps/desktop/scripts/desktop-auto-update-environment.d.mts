@@ -5,14 +5,15 @@ export const DESKTOP_AUTO_UPDATE_ENV: 'DSH_DESKTOP_AUTO_UPDATE_ENV'
 export type DesktopAutoUpdateEnvironment = 'test' | 'production'
 
 /** Directory name of one supported Desktop release target. */
-export type DesktopAutoUpdateTarget = 'mac-arm64' | 'mac-x64' | 'win-x64'
+export type DesktopAutoUpdateTarget = 'mac-arm64' | 'mac-x64' | 'win-x64' | 'linux-x64' | 'linux-arm64'
 
 /**
  * Name the fixed installer object shared by uploading and cache refresh.
+ * Only macOS and Windows publish a fixed website installer.
  * @param target Supported Desktop target.
  * @returns Fixed download filename.
  */
-export function desktopLatestInstallerFilename(target: DesktopAutoUpdateTarget): string
+export function desktopLatestInstallerFilename(target: 'mac-arm64' | 'mac-x64' | 'win-x64'): string
 
 /**
  * Resolve the production website installer URL shared by approval, upload and purge.
@@ -70,12 +71,15 @@ export function desktopBuildRecordFilename(target: DesktopAutoUpdateTarget): str
  * Return the electron-builder channel metadata filename for an application version.
  * @param version - Desktop semantic version.
  * @param platform - Target platform.
+ * @param channel - Selected channel; omitted means nightly.
+ * @param arch - Target architecture; electron-builder suffixes the Linux manifest for non-x64.
  * @returns Channel metadata filename emitted for the target.
  */
 export function desktopUpdateMetadataFilename(
   version: string,
   platform: NodeJS.Platform,
   channel?: 'nightly' | 'stable',
+  arch?: string,
 ): string
 
 /**

@@ -10,6 +10,7 @@ import { createWindowsTokenSigner } from './windows-sign.mjs'
 import { resolveDesktopPolicyEnvironment } from './desktop-policy-environment.mjs'
 import { validateMacOSSignatureCacheDirectory } from './macos-signature-cache-directory.mjs'
 import { resolveMacOSPackageSettings } from './macos-package-settings.mjs'
+import { resolveLinuxPackageSettings } from './linux-package-settings.mjs'
 import { resolveWindowsSignatureCacheDirectory } from './windows-signature-cache-directory.mjs'
 import { resolveWindowsPackageSettings } from './windows-package-settings.mjs'
 import { resolveDesktopTargetBuildPaths } from './desktop-build-paths.mjs'
@@ -18,7 +19,8 @@ const APP_ROOT = fileURLToPath(new URL('..', import.meta.url))
 const SHARED_SETTING = /^(?:DSH_DESKTOP_(?:APP_ID|AUTO_UPDATE_ENV|NPM_REGISTRY|MANDATORY_UPDATE_(?:CONFIG|(?:TEST|PROD)_ORIGIN))|DOWNLOAD_TEST_RELEASE_ID|DOWNLOAD_PROD_EO_ZONE_ID|DOWNLOAD_(?:TEST|PROD)_(?:ORIGIN|COS_BUCKET|COS_SECRET_ID|COS_SECRET_KEY))$/u
 const WINDOWS_SETTING = /^DSH_DESKTOP_WINDOWS_(?:CER_FILE|SIGNTOOL|KEY_CONTAINER|TOKEN_PIN|SIGNATURE_CACHE_DIR|SIGNATURE_CACHE_CONCURRENCY|PACK_CONCURRENCY|COMPRESSION_LEVEL)$/u
 const MACOS_SETTING = /^(?:DSH_DESKTOP_MACOS_(?:SIGNING_IDENTITY|TEAM_ID|SIGNATURE_CACHE_DIR|PACK_CONCURRENCY|ZIP_COMPRESSION_LEVEL|DOWNLOAD_PROXY|NOTARIZATION_PROXY)|APPLE_(?:API_KEY|API_KEY_ID|API_ISSUER|ID|APP_SPECIFIC_PASSWORD|TEAM_ID|KEYCHAIN|KEYCHAIN_PROFILE)|CSC_(?:LINK|KEY_PASSWORD))$/u
-const AMBIENT_RELEASE_SETTING = /^(?:DSH_DESKTOP_(?:APP_ID|AUTO_UPDATE_ENV|MANDATORY_UPDATE_.*|WINDOWS_.*|MACOS_.*)|APPLE_.*|(?:WIN_)?CSC_.*|DOWNLOAD_(?:TEST|PROD)_.*)$/iu
+const LINUX_SETTING = /^DSH_DESKTOP_LINUX_PACK_CONCURRENCY$/u
+const AMBIENT_RELEASE_SETTING = /^(?:DSH_DESKTOP_(?:APP_ID|AUTO_UPDATE_ENV|MANDATORY_UPDATE_.*|WINDOWS_.*|MACOS_.*|LINUX_.*)|APPLE_.*|(?:WIN_)?CSC_.*|DOWNLOAD_(?:TEST|PROD)_.*)$/iu
 
 /**
  * Select local macOS test defaults without reading dotenv files or inheriting release settings.
@@ -34,12 +36,27 @@ export function localMacOSPackageEnvironment(environment = process.env) {
 }
 
 /**
+ * Select local Linux test defaults without reading dotenv files or inheriting release settings.
+ * A Linux package carries no signature, so an unsigned local build needs no release configuration:
+ * no `.env.linux`, no update deployment and no credential of any kind.
+ * @param {NodeJS.ProcessEnv} environment Parent environment, retained for build tools and networking.
+ * @returns {NodeJS.ProcessEnv} Unsigned build environment with the product application identifier and no update policy.
+ */
+export function localLinuxPackageEnvironment(environment = process.env) {
+  return {
+    ...Object.fromEntries(Object.entries(environment).filter(([name]) => !AMBIENT_RELEASE_SETTING.test(name))),
+    DSH_DESKTOP_APP_ID: 'com.fanyu.harness',
+    DSH_DESKTOP_UNSIGNED: '1',
+  }
+}
+
+/**
  * Read a machine preset when selected, otherwise the target's required dotenv; no ambient release fallback.
  * PACKAGE_MACOS_ZIP_COMPRESSION_LEVEL overrides the Mac file setting with 3 or 7; an empty value is invalid.
  * Any defined Mac ZIP override rejects Windows, including an empty value; nonempty Windows overrides reject macOS.
  * PACKAGE_TEST_RELEASE_ID overrides the test preset only; blank retains its configured ID.
  * PACKAGE_WINDOWS_COMPRESSION_LEVEL selects 3 or 7 for Windows workflow builds; blank retains the file setting.
- * @param {'win32' | 'darwin'} platform Target platform.
+ * @param {'win32' | 'darwin' | 'linux'} platform Target platform.
  * @param {NodeJS.ProcessEnv} environment Parent environment, retained only for unrelated build tools.
  * @param {string} appRoot Desktop application directory; relative credential paths resolve here.
  * @param {{ unsigned?: boolean, prepareOnly?: boolean }} options Unsigned presets and Windows preparation-only presets never read signing credentials.
@@ -58,23 +75,26 @@ export function loadDesktopPackageEnvironment(platform, environment = process.en
     if (!['3', '7'].includes(zipCompression)) throw new Error('desktop package: workflow ZIP compression must be 3 or 7')
   }
   const preset = environment.DSH_PACKAGING_PRESET
-  let path = join(appRoot, platform === 'win32' ? '.env.windows' : '.env.macos')
+  let path = join(appRoot, platform === 'win32' ? '.env.windows' : platform === 'linux' ? '.env.linux' : '.env.macos')
   if (preset !== undefined) {
     if (preset !== 'test' && preset !== 'production') throw new Error('desktop package: preset must be test or production')
     const root = environment.DSH_PACKAGING_CONFIG_DIR
     if (!root || !isAbsolute(root)) throw new Error('desktop package: DSH_PACKAGING_CONFIG_DIR must be an absolute directory')
     path = join(root, 'presets', `${preset}.env`)
   }
-  const platformSetting = platform === 'win32' ? WINDOWS_SETTING : MACOS_SETTING
+  const platformSetting = platform === 'win32' ? WINDOWS_SETTING : platform === 'linux' ? LINUX_SETTING : MACOS_SETTING
   const publicPlatformSetting = platform === 'win32'
     ? /^DSH_DESKTOP_WINDOWS_(?:SIGNATURE_CACHE_(?:DIR|CONCURRENCY)|PACK_CONCURRENCY|COMPRESSION_LEVEL)$/u
-    : /^DSH_DESKTOP_MACOS_(?:SIGNATURE_CACHE_DIR|PACK_CONCURRENCY|ZIP_COMPRESSION_LEVEL|DOWNLOAD_PROXY|NOTARIZATION_PROXY)$/u
+    : platform === 'linux'
+      ? /^DSH_DESKTOP_LINUX_PACK_CONCURRENCY$/u
+      : /^DSH_DESKTOP_MACOS_(?:SIGNATURE_CACHE_DIR|PACK_CONCURRENCY|ZIP_COMPRESSION_LEVEL|DOWNLOAD_PROXY|NOTARIZATION_PROXY)$/u
   const settings = readSettings(path, name => preset === undefined
     ? SHARED_SETTING.test(name) || platformSetting.test(name)
     : /^(?:DSH_DESKTOP_(?:APP_ID|AUTO_UPDATE_ENV|NPM_REGISTRY|MANDATORY_UPDATE_(?:CONFIG|(?:TEST|PROD)_ORIGIN))|DOWNLOAD_TEST_(?:ORIGIN|RELEASE_ID))$/u.test(name) || publicPlatformSetting.test(name))
   if (preset !== undefined) {
     if (settings.DSH_DESKTOP_AUTO_UPDATE_ENV !== preset) throw new Error('desktop package: preset deployment must match its name')
-    if (!options.unsigned && (platform === 'darwin' || !options.prepareOnly)) {
+    // Linux carries no signing stage, so a preset never reads a macOS or Windows signing file for it.
+    if (!options.unsigned && platform !== 'linux' && (platform === 'darwin' || !options.prepareOnly)) {
       const filename = platform === 'win32' ? 'windows-signing.env' : 'macos-signing.env'
       Object.assign(settings, readSettings(join(dirname(dirname(path)), 'secrets', filename),
         name => platform === 'win32'
@@ -113,7 +133,7 @@ function requireReadableFile(environment, name) {
 /**
  * Validate the packaging mode before preparation without invoking a token or Apple's services.
  * @param {NodeJS.ProcessEnv} environment Selected local defaults or file-owned release settings.
- * @param {{ platform: 'win32' | 'darwin', arch: string }} target Selected release target.
+ * @param {{ platform: 'win32' | 'darwin' | 'linux', arch: string }} target Selected release target.
  * @param {{ unsigned?: boolean, prepareOnly?: boolean, skipNotarization?: boolean }} options Explicit packaging mode.
  * @returns {void}
  */
@@ -121,8 +141,13 @@ export function validateDesktopPackageEnvironment(environment, target, options =
   resolveDesktopTargetBuildPaths(environment, target.platform, target.arch)
   resolveDesktopAppId(environment)
   resolveNpmRegistry(environment)
-  if (target.platform !== 'darwin' || !options.unsigned) resolveDesktopPolicyEnvironment(environment)
+  // The mandatory-update policy ships on Windows and macOS only, and an unsigned macOS build never
+  // publishes. A Linux package carries no policy at all, so requiring an origin for it would demand
+  // release configuration from a local unsigned build that has no deployment to point at.
+  const shipsPolicy = target.platform === 'win32' || (target.platform === 'darwin' && !options.unsigned)
+  if (shipsPolicy) resolveDesktopPolicyEnvironment(environment)
   if (target.platform === 'darwin') resolveMacOSPackageSettings(environment)
+  else if (target.platform === 'linux') resolveLinuxPackageSettings(environment)
   else resolveWindowsPackageSettings(environment)
   if (options.unsigned) return
   if (!options.prepareOnly) resolveDesktopAutoUpdateConfig(environment, target.platform, target.arch)
@@ -134,7 +159,7 @@ export function validateDesktopPackageEnvironment(environment, target, options =
       keyContainer: environment.DSH_DESKTOP_WINDOWS_KEY_CONTAINER,
     })
     if (!options.prepareOnly) resolveWindowsSignatureCacheDirectory(environment)
-  } else {
+  } else if (target.platform === 'darwin') {
     if (environment.DSH_DESKTOP_MACOS_SIGNATURE_CACHE_DIR !== undefined) validateMacOSSignatureCacheDirectory(environment.DSH_DESKTOP_MACOS_SIGNATURE_CACHE_DIR)
     resolveMacOSSigningEnvironment(environment)
     if (!options.skipNotarization) {

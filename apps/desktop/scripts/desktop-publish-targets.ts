@@ -10,6 +10,18 @@ export const desktopPackageWorkflows = {
 
 const targetSchema = z.enum(['mac-arm64', 'mac-x64', 'win-x64'])
 
+/** Fixed targets with a manual packaging workflow and a publication route. */
+export type DesktopPublishTarget = z.infer<typeof targetSchema>
+
+/**
+ * Report whether a build target has a packaging workflow and a publication route.
+ * @param target - Supported build target, which may be one that only packages locally.
+ * @returns Whether the target can be routed to a publication machine.
+ */
+export function isDesktopPublishTarget(target: string): target is DesktopPublishTarget {
+  return targetSchema.safeParse(target).success
+}
+
 /** Machine labels are unique; a scalar target is shorthand for a one-element target list. */
 export const desktopPublishRunnersSchema = z.record(z.string(), z.object({
   label: z.string().regex(/^dsh-[a-z0-9-]+$/u),

@@ -29,6 +29,7 @@ import { installWindowsDirectoryInstaller } from './windows-directory-installer.
 import { preserveWindowsRuntimeSignature, signWindowsCode } from './windows-runtime-signature.mjs'
 import { prepareWindowsAsarUnpack, verifyWindowsAsarUnpack } from './windows-asar-unpack.mjs'
 import { recordPackagingEvent } from './packaging-run.mjs'
+import { DESKTOP_ARTIFACT_PREFIX, DESKTOP_PRODUCT_NAME } from './desktop-product-identity.mjs'
 import {
   resolveMacOSAppUpdateFeed,
   verifyMacOSAppUpdateConfig,
@@ -66,7 +67,13 @@ export function createElectronBuilderConfig(
   if (skipNotarization && (unsigned || resolvedPlatform !== 'darwin')) throw new Error('Skipping notarization requires a signed macOS build')
   const packagesMacOS = targetPlatform === 'darwin' || (targetPlatform === undefined && hostPlatform === 'darwin')
   const packagesWindows = resolvedPlatform === 'win32'
-  const policy = packagesMacOS && unsigned ? undefined : resolveDesktopPolicyEnvironment(env)
+  const packagesLinux = resolvedPlatform === 'linux'
+  // The mandatory-update policy is implemented for Windows and macOS only. A packaged manifest that
+  // carries one on any other platform makes the application throw "desktop policy: unsupported
+  // platform" at startup, so a Linux build that shipped the policy would open the fatal dialog
+  // instead of a window. An unsigned macOS build skips the policy as well: it never publishes.
+  const policy = packagesMacOS && unsigned ? undefined
+    : resolvedPlatform === 'win32' || resolvedPlatform === 'darwin' ? resolveDesktopPolicyEnvironment(env) : undefined
   if (resolvedPlatform === 'win32') installWindowsDirectoryInstaller()
   const macOSSigning = packagesMacOS && !unsigned ? resolveMacOSSigningEnvironment(env) : undefined
   if (packagesMacOS && !unsigned && !skipNotarization) resolveMacOSNotarizationEnvironment(env)
@@ -108,7 +115,7 @@ export function createElectronBuilderConfig(
   const packaged = resolveDesktopBuildCommit(env)
   return {
     appId,
-    protocols: [{ name: 'DeepSeek Harness', schemes: ['dsh'] }],
+    protocols: [{ name: 'Fanyu harness', schemes: ['dsh'] }],
     extraMetadata: {
       dshDesktopAppId: appId,
       dshDesktopUpdateChannel: update?.channel ?? 'nightly',
@@ -116,11 +123,10 @@ export function createElectronBuilderConfig(
       ...buildVersion === productVersion ? {} : { version: buildVersion },
       ...packaged === undefined ? {} : { dshBuildCommit: packaged.commit, dshBuildDirty: packaged.dirty },
     },
-    productName: 'DeepSeek Harness',
-    // The default copyright uses author.name; this line names the product instead.
-    copyright: `Copyright © ${new Date().getFullYear()} \${productName}`,
+    productName: DESKTOP_PRODUCT_NAME,
+    copyright: 'Copyright © 2026 泛语科技',
     // Unsigned builds carry their own suffix so a shared file can never pass for a release artifact.
-    artifactName: `deepseek-harness-\${version}-\${os}-\${arch}${output.suffix}.\${ext}`,
+    artifactName: `${DESKTOP_ARTIFACT_PREFIX}-\${version}-\${os}-\${arch}${output.suffix}.\${ext}`,
     directories: { output: output.directory },
     asar: true,
     electronDist: buildPaths.electron,
@@ -159,7 +165,9 @@ export function createElectronBuilderConfig(
     asarUnpack: unpack,
     extraResources: [
       { from: buildPaths.runtime, to: 'runtime' },
-      { from: fileURLToPath(new URL('../resources/icon-windows.png', import.meta.url)), to: 'icon.png' },
+      // The About panel reads resources/icon.png at runtime; a Linux build must ship the Linux icon
+      // instead of the Windows one used for tray and taskbar assets.
+      { from: fileURLToPath(new URL(packagesLinux ? '../resources/icon.png' : '../resources/icon-windows.png', import.meta.url)), to: 'icon.png' },
       // Windows tray bitmaps; macOS keeps the Dock and ships no menu bar icon.
       ...(packagesWindows ? [{ from: fileURLToPath(new URL('../resources/tray-windows.ico', import.meta.url)), to: 'tray.ico' }] : []),
     ],
@@ -169,7 +177,7 @@ export function createElectronBuilderConfig(
       // macOS matches the application locale against this bundle, not Electron Framework resources.
       extendInfo: {
         CFBundleLocalizations: ['en', 'zh_CN', 'ja', 'es', 'fr', 'de', 'ru', 'pt'],
-        NSMicrophoneUsageDescription: 'DeepSeek Harness uses your microphone to transcribe speech into message drafts.',
+        NSMicrophoneUsageDescription: 'Fanyu harness uses your microphone to transcribe speech into message drafts.',
       },
       // Ad-hoc signing keeps the modified Electron executable runnable without a Developer ID.
       identity: unsigned ? '-' : macOSSigning?.signingIdentity,
@@ -255,8 +263,21 @@ export function createElectronBuilderConfig(
       target: ['nsis'],
     },
     linux: {
+      icon: fileURLToPath(new URL('../resources/icon.png', import.meta.url)),
+      // The executable name is also the AppImage entry point and the deb payload command, so it
+      // must not contain the space in the product name.
+      executableName: DESKTOP_ARTIFACT_PREFIX,
       category: 'Development',
-      target: ['AppImage'],
+      synopsis: 'Fanyu harness desktop application for Linux',
+      // AppImage is the auto-update carrier; deb and tar.gz are additional install formats.
+      target: ['AppImage', 'deb', 'tar.gz'],
+    },
+    appImage: {
+      // electron-builder injects `--no-sandbox` into the desktop entry whenever its appimage
+      // toolset is unresolved, which would disable the Chromium sandbox for every installed user.
+      // An explicit empty list keeps the entry as `AppRun %U`; the bundled AppRun script probes
+      // user namespaces at launch and passes `--no-sandbox` itself only when they are unavailable.
+      executableArgs: [],
     },
     nsis: {
       uninstallDisplayName: '${productName}',

@@ -5,7 +5,7 @@ import { createReadStream } from 'node:fs'
 import { readFile, stat } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import { dump, load } from 'js-yaml'
-import type { DesktopPackageTargetName } from './package-target.ts'
+import type { DesktopPublishTarget } from './desktop-publish-targets.ts'
 import {
   desktopBuildRecordFilename,
   desktopLatestInstallerFilename,
@@ -13,6 +13,7 @@ import {
   resolveDesktopUploadConfig,
 } from './desktop-auto-update-environment.mjs'
 import { desktopTargetBuildPaths } from './desktop-build-paths.mjs'
+import { DESKTOP_ARTIFACT_PREFIX } from './desktop-product-identity.mjs'
 import { validateDesktopBuildVersion } from './desktop-build-version.mjs'
 
 const APP_ROOT = resolve(import.meta.dirname, '..')
@@ -21,7 +22,7 @@ const TARGETS = {
   'mac-arm64': { platform: 'darwin', arch: 'arm64', os: 'mac' },
   'mac-x64': { platform: 'darwin', arch: 'x64', os: 'mac' },
   'win-x64': { platform: 'win32', arch: 'x64', os: 'win' },
-} as const satisfies Record<DesktopPackageTargetName, {
+} as const satisfies Record<DesktopPublishTarget, {
   readonly platform: NodeJS.Platform
   readonly arch: string
   readonly os: string
@@ -43,7 +44,7 @@ export interface DesktopUploadArtifact {
 /** A validated installer or update upload, with any channel metadata ordered last. */
 export interface DesktopUploadPlan {
   readonly environment: 'test' | 'production'
-  readonly target: DesktopPackageTargetName
+  readonly target: DesktopPublishTarget
   readonly version: string
   /** Update feed directory URL, or the single installer URL for a fixed download. */
   readonly publicUrl: string
@@ -183,7 +184,7 @@ function uploadArtifact(
  * @returns A fixed installer upload or an update plan with channel metadata ordered last.
  */
 export async function createDesktopUploadPlan(
-  targetName: DesktopPackageTargetName,
+  targetName: DesktopPublishTarget,
   options: DesktopUploadPlanOptions = {},
 ): Promise<DesktopUploadPlan> {
   const target = TARGETS[targetName]
@@ -241,7 +242,7 @@ export async function createDesktopUploadPlan(
     throw new Error(`desktop upload: ${metadataFilename}.files must contain exactly one target update file`)
   }
 
-  const base = `deepseek-harness-${buildVersion}-${target.os}-${target.arch}`
+  const base = `${DESKTOP_ARTIFACT_PREFIX}-${buildVersion}-${target.os}-${target.arch}`
   const updaterExtension = target.platform === 'darwin' ? 'zip' : 'exe'
   const updaterInfo = updateFileInfo(metadata.files[0], `${metadataFilename}.files[0]`, `${base}.${updaterExtension}`)
   const updaterPath = await verifyChecksummedArtifact(artifactsRoot, updaterInfo)
