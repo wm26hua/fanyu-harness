@@ -36,6 +36,7 @@ export const en = {
   'subtitle.collapse': 'Collapse description for {name}',
   'back': 'Back',
   'brand.localBuild': 'FYH Local Build',
+  'brand.name': 'Fanyu harness',
   'workspace.defaultName': 'Default workspace',
   'unknown': 'Unknown',
   'none': 'None',

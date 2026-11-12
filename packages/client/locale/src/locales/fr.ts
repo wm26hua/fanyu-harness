@@ -37,6 +37,7 @@ export const fr = {
   'subtitle.collapse': 'Réduire la description de {name}',
   'back': 'Retour',
   'brand.localBuild': 'Version locale de FYH',
+  'brand.name': 'Fanyu harness',
   'workspace.defaultName': 'Espace de travail par défaut',
   'unknown': 'Inconnu',
   'none': 'Aucun',

@@ -11,7 +11,6 @@ export const zh = {
   'panels.label': '全局面板',
   'navigation.label': '导航',
   'panels.more': '更多',
-  'version.copied': '版本号复制成功',
 } satisfies Record<string, string>
 
 /** The sidebar namespace key union. */
@@ -28,7 +27,6 @@ export const en = {
   'panels.label': 'Global panels',
   'navigation.label': 'Navigation',
   'panels.more': 'More',
-  'version.copied': 'Version copied',
 } satisfies Record<SidebarKey, string>
 
 /** Japanese copy, checked against the English keys. */
@@ -42,7 +40,6 @@ export const ja = {
   'panels.label': 'グローバルパネル',
   'navigation.label': 'ナビゲーション',
   'panels.more': 'その他',
-  'version.copied': 'バージョンをコピーしました',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -56,7 +53,6 @@ export const es = {
   'panels.label': 'Paneles globales',
   'navigation.label': 'Navegación',
   'panels.more': 'Más',
-  'version.copied': 'Versión copiada',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -70,7 +66,6 @@ export const fr = {
   'panels.label': 'Panneaux globaux',
   'navigation.label': 'Navigation',
   'panels.more': 'Plus',
-  'version.copied': 'Version copiée',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -84,7 +79,6 @@ export const de = {
   'panels.label': 'Globale Bereiche',
   'navigation.label': 'Navigation',
   'panels.more': 'Mehr',
-  'version.copied': 'Version kopiert',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -98,7 +92,6 @@ export const ru = {
   'panels.label': 'Глобальные панели',
   'navigation.label': 'Навигация',
   'panels.more': 'Ещё',
-  'version.copied': 'Версия скопирована',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -112,5 +105,4 @@ export const pt = {
   'panels.label': 'Painéis globais',
   'navigation.label': 'Navegação',
   'panels.more': 'Mais',
-  'version.copied': 'Versão copiada',
 } satisfies Record<keyof typeof en, string>

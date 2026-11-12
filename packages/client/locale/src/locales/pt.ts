@@ -37,6 +37,7 @@ export const pt = {
   'subtitle.collapse': 'Recolher descrição de {name}',
   'back': 'Voltar',
   'brand.localBuild': 'Versão local do FYH',
+  'brand.name': 'Fanyu harness',
   'workspace.defaultName': 'Espaço de trabalho padrão',
   'unknown': 'Desconhecido',
   'none': 'Nenhum',

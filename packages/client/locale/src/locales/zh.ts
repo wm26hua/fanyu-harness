@@ -34,6 +34,7 @@ export const zh = {
   'subtitle.collapse': '收起{name}的描述',
   'back': '返回',
   'brand.localBuild': '维普学域本地构建',
+  'brand.name': '维普学域',
   'workspace.defaultName': '默认工作区',
   'unknown': '未知',
   'none': '无',

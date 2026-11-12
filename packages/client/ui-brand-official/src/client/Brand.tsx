@@ -1,8 +1,15 @@
 import { useId } from 'react'
-import type { SidebarBrandMarkOwnerProps } from '@deepseek-ai/dsh-client-ui-sidebar/client'
 
 /** Native viewBox of the brand mark, in the artwork's own user units. */
 const MARK = { width: 41, height: 32 } as const
+
+/** Presentation a hosting surface selects for the brand mark. */
+export interface BrandMarkProps {
+  /** Requested square edge in pixels. */
+  size: number
+  /** Host class preserving the surrounding mark geometry. */
+  className?: string | undefined
+}
 
 /** One linear gradient of the mark, in the mark's user units. */
 interface MarkGradient {
@@ -67,15 +74,6 @@ const MARK_OUTLINES: readonly (readonly [string, number])[] = [
   ['M35.7774 8.37349L31.0759 12.2871C31.0303 12.3251 31.0039 12.3786 31.0038 12.438C30.9886 20.0003 29.1146 36.3719 40.0918 28.4586C40.2575 28.3392 40.1644 28.0558 39.9601 28.0586C33.2604 28.1493 34.4771 16.4663 36.1034 8.56689C36.1417 8.38094 35.9233 8.25202 35.7774 8.37349Z', 4],
 ]
 
-/** Height of the text wordmark artwork, matching the mark slot's default size. */
-const WORDMARK = { width: 126, height: 24 } as const
-
-/** The product wordmark as text, in the bundled brand face. */
-const WORDMARK_TEXT = 'Fanyu harness'
-
-/** Advance width the wordmark text is pinned to, in viewBox units. */
-const WORDMARK_ADVANCE = 126
-
 /**
  * Render the brand mark with the presentation requested by its host surface.
  * The mark keeps the brand's own gradient fills, so it reads on both the light
@@ -83,13 +81,14 @@ const WORDMARK_ADVANCE = 126
  * @param props - Host-supplied mark presentation.
  * @returns the brand mark.
  */
-export function OfficialBrandMark({ size }: SidebarBrandMarkOwnerProps) {
+export function OfficialBrandMark({ size, className }: BrandMarkProps) {
   // Gradient ids must be unique per mounted instance: the sidebar renders the
   // mark twice (expanded row and collapsed rail), and duplicate ids would make
   // the second instance resolve the first instance's paint server.
   const prefix = `fyh-brand-${useId().replace(/[^a-zA-Z0-9_-]/gu, '')}`
   return (
     <svg
+      className={className}
       width={size}
       height={(size * MARK.height) / MARK.width}
       viewBox={`0 0 ${String(MARK.width)} ${String(MARK.height)}`}
@@ -111,40 +110,9 @@ export function OfficialBrandMark({ size }: SidebarBrandMarkOwnerProps) {
           </linearGradient>
         ))}
       </defs>
-      {MARK_OUTLINES.map(([d, gradient]) => (
-        <path key={d} d={d} fill={`url(#${prefix}-${String(gradient)})`} />
+      {MARK_OUTLINES.map(([d, gradient], index) => (
+        <path key={`${String(index)}:${d}`} d={d} fill={`url(#${prefix}-${String(gradient)})`} />
       ))}
-    </svg>
-  )
-}
-
-/**
- * Render the product wordmark as brand text rather than artwork.
- * Set in the bundled Montserrat face so no runtime font dependency is added.
- * @returns the wordmark svg.
- */
-export function OfficialBrandName() {
-  return (
-    <svg
-      width={(24 * WORDMARK.width) / WORDMARK.height}
-      height={24}
-      viewBox={`0 0 ${String(WORDMARK.width)} ${String(WORDMARK.height)}`}
-      fill="none"
-      aria-hidden="true"
-    >
-      <text
-        x="0"
-        y="17.8"
-        fill="currentColor"
-        style={{ fontFamily: 'var(--dsw-font-family-brand, Montserrat), system-ui, sans-serif' }}
-        fontSize="18"
-        fontWeight="500"
-        letterSpacing="-0.2"
-        textLength={WORDMARK_ADVANCE}
-        lengthAdjust="spacing"
-      >
-        {WORDMARK_TEXT}
-      </text>
     </svg>
   )
 }

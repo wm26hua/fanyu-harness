@@ -81,6 +81,12 @@ pnpm --filter @deepseek-ai/dsh-web-frontend run render:app-icons  # apps/web/pub
 
 `packages/client/ui-primitives/src/BrandWordmark.tsx` 仍保留上游的「deepseek HARNESS」矢量字标（16 KB、14 条字形 path + V4 徽标），但**已经没有任何调用方**（`ui-brand-official` 改为自绘文字字标后不再引用它）。它现在只是一个仍在被单测覆盖的孤立导出。建议下一轮连同 `ui-primitives/tests/icons.client.spec.tsx` 的 `BrandWordmark` 用例一起删除，或直接改造成文字字标。`FishLogo` / `FISH_LOGO_PATH` **不能删**：首页鲸鱼 morph、侧栏 fallback、liveshare viewer 仍在用。
 
+### 8. 品牌 lockup 统一（2026-11-12）
+
+- 侧栏品牌行（[`ui-sidebar/src/client/SidebarRoot.tsx`](./packages/client/ui-sidebar/src/client/SidebarRoot.tsx)）不再显示「维普学域本地构建 + 构建号」：标记槽由 [`ui-brand-official`](./packages/client/ui-brand-official/src/client/Brand.tsx) 的 `OfficialBrandMark`（vi 渐变标记）填充；名称走公共字典新增键 `brand.name`（zh「维普学域」，其余 7 语言「Fanyu harness」）。构建号复制功能、相关 `copyVersion` 样式与 `version.copied` 文案一并移除。
+- 首页空态标题（[`ui-conversation/src/client/skeleton/EmptyHero.tsx`](./packages/client/ui-conversation/src/client/skeleton/EmptyHero.tsx)）从「鲸鱼 + 探索未至之境 + 预览版」改为「vi 标记 + 品牌名」：`hero.headline` 各语言值改为品牌名，删除 `hero.preview` 与预览徽标样式。
+- `ui-brand-official` 的品牌槽注册不再受 `DSH_CLIENT_BUILD_PROFILE === 'official'` 限制——本发行版在 local / official 两种构建 profile 都输出自家品牌；`OfficialBrandName` 文本字标组件删除（本地化名称改由宿主文案座椅提供）。
+
 ---
 
 ## 二、待改清单（按可见度排序）
@@ -88,6 +94,8 @@ pnpm --filter @deepseek-ai/dsh-web-frontend run render:app-icons  # apps/web/pub
 > 行号为改动前的位置，本轮改动后可能有 ±2 行偏移。
 
 ### P0 —— 用户一打开就能看见
+
+> #1 与 #4 已在 2026-11-12 处理（见 §一.8）：首页空态标记由 `ui-brand-official` 的 `OfficialBrandMark` 填充，侧栏名称改为公共字典的本地化品牌名；鲸鱼仅作为槽 fallback 保留（含悬停 morph）。
 
 | # | 位置 | 现状 | 说明与建议 |
 | --- | --- | --- | --- |

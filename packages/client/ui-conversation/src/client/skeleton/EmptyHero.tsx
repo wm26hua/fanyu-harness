@@ -151,9 +151,8 @@ export function HeroShell({ t, renderSlot, children }: HeroShellProps) {
             })}
           </span>
           <span className={css.titleGroup}>
-            {/* Own element: keeps the headline text addressable apart from the badge. */}
+            {/* The blank home opens on the product name rather than a tagline. */}
             <span>{t('hero.headline')}</span>
-            <span className={css.previewBadge}>{t('hero.preview')}</span>
           </span>
         </div>
         <div className={css.body}>

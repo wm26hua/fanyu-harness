@@ -37,6 +37,7 @@ export const de = {
   'subtitle.collapse': 'Beschreibung für {name} einklappen',
   'back': 'Zurück',
   'brand.localBuild': 'Lokaler FYH-Build',
+  'brand.name': 'Fanyu harness',
   'workspace.defaultName': 'Standardarbeitsbereich',
   'unknown': 'Unbekannt',
   'none': 'Keine',

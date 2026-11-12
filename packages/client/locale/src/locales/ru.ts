@@ -37,6 +37,7 @@ export const ru = {
   'subtitle.collapse': 'Свернуть описание {name}',
   'back': 'Назад',
   'brand.localBuild': 'Локальная сборка FYH',
+  'brand.name': 'Fanyu harness',
   'workspace.defaultName': 'Рабочая область по умолчанию',
   'unknown': 'Неизвестно',
   'none': 'Нет',
