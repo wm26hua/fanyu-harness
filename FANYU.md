@@ -141,6 +141,8 @@ pnpm --dir apps/desktop run package:mac:x64:unsigned
 
 **当前决定：不删除、不 Disable，就让它们报红。** 它们与桌面打包互不影响（失败不拦推送、不消耗托管 runner 分钟，因为根本找不到匹配的自托管 runner）。想改这个决定时的两种做法见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md) 第一节末尾。
 
+**`.github/dependabot.yml` 已删除**：上游那份配置每天 4:00（Asia/Shanghai）给 npm / uv / github-actions 三个生态开升级 PR，每个 PR 都会带着新分支出现并触发上游 PR workflow 报红。删掉后不再自动生成升级分支与 PR；需要时从历史里取回该文件即可恢复。
+
 ## 从上游同步
 
 在工作区根目录执行：
