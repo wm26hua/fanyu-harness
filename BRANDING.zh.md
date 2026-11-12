@@ -163,7 +163,7 @@ pnpm --filter @deepseek-ai/dsh-web-frontend run render:app-icons  # apps/web/pub
 | 45 | `packages/core/system-prompt/src/index.ts:459`、`packages/context/harness-dev-context/src/index.ts:40,51,144,156` | 每个会话系统提示词的固定首句与 runtime context 文本。⚠️ 第 60、68 行的 `prefix` 常量用于**识别并替换已持久化的旧文本**，不同步改会让历史会话里的旧文案永久残留。 |
 | 46 | `apps/cli/src/args.ts:156`、`packages/bundle/web-app/src/startup.ts:62`、`packages/bundle/sdk-app/src/index.ts:41` | `dsh --help` 三处描述；`docs/cli-help*.md` 是生成产物 |
 | 47 | `scripts/client-build-environment.ts` 以外的构建期标识 | `DSH_*` 环境变量前缀（100+ 处）——功能标识，建议保留 |
-| 48 | upstream 自托管 CI 资产 | `scripts/ci-workflow.spec.ts`、`ci-compatible-selfhosted.spec.ts`、`native/system/docs/release.md:53` 仍绑定 `deepseek-harness/deepseek-harness` 与自托管 runner；`FANYU.md` 已另起三端工作流，这些是死代码，但每次同步上游都会冲突 |
+| 48 | upstream 自托管 CI 资产 | `scripts/ci-workflow.spec.ts`、`ci-compatible-selfhosted.spec.ts`、`native/system/docs/release.md:53` 仍绑定 `deepseek-harness/deepseek-harness` 与自托管 runner；`FANYU.md` 已另起 Windows/Linux 工作流，这些是死代码，但每次同步上游都会冲突 |
 | 49 | `packages/util/home-paths` 等处的过期文档 | `packages/skill/skill-filesystem/src/index.ts:53`、`packages/identity/anonymous-user-id/README.md:12,40,96`、`python/sdk-runtime/README.md:9` 仍写 `~/.dsh`，而代码里 `DSH_HOME_DIR_NAME` 已是 `.fyh`。**根 README 曾声明「不改名」，与代码矛盾**（已在本轮外，仍是错的）。 |
 
 ---
@@ -207,6 +207,6 @@ pnpm --filter @deepseek-ai/dsh-web-frontend run render:app-icons  # apps/web/pub
 ## 五、上游同步注意事项
 
 - git 根目录是**工作区根**（`fanyu-harness/` 的上一级）。`git` 命令在根目录执行，`pnpm` 命令在 `fanyu-harness/` 内执行。
-- **GitHub 只读仓库根目录的 `.github/workflows/`**。上游的 66 个 `.github` 文件都在 `fanyu-harness/.github/` 下，因此**全部不会在 GitHub 上运行**（这既避免了它们的自托管 runner 报错，也意味着三端打包工作流必须放在工作区根）。详见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md)。
+- **GitHub 只读仓库根目录的 `.github/workflows/`**。上游的 66 个 `.github` 文件都在 `fanyu-harness/.github/` 下，因此**全部不会在 GitHub 上运行**（这既避免了它们的自托管 runner 报错，也意味着打包工作流必须放在工作区根）。详见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md)。
 - 与上游 merge 时的优先级：**身份字段、图标美术与本清单以本仓库为准**（`desktop-product-identity.mjs`、`package-target.ts` 的 linux 目标、`electron-builder-config.mjs` 的 linux 段与 policy 注入条件、`main.ts` 的首次启动分支、`resources/icon*.{svg,png}`、`installer/assets/*`），其余跟随上游。
 - 每次同步上游后，请重跑 `render:tray-icon` 与 `render:app-icons`，并用 `git diff --stat` 确认图标位图没有被上游覆盖。
