@@ -120,7 +120,7 @@ jobs:
           "NODE_COMPILE_CACHE=${{ runner.temp }}/node-compile-cache" >> $env:GITHUB_ENV
           "DSH_DESKTOP_NPM_REGISTRY=${{ vars.DSH_DESKTOP_NPM_REGISTRY || 'https://registry.npmjs.org' }}" >> $env:GITHUB_ENV
 
-      - uses: pnpm/action-setup@v5.0.0
+      - uses: pnpm/action-setup@v5
         with:
           # Pinned to the workspace's own `packageManager` value in `package.json`, which now
           # sits at this repository's root and can be discovered. It stays stated explicitly so
