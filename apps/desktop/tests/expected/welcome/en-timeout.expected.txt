@@ -1,5 +1,5 @@
-DeepSeek Harness
-DeepSeek Harness
+Fanyu harness
+Fanyu harness
 Sign in timed out
 Sign in again
 Add API Key

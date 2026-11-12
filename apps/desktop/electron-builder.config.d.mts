@@ -5,7 +5,7 @@ export interface DesktopElectronBuilderConfig {
   readonly appId: string
   readonly copyright: string
   readonly artifactName: string
-  readonly protocols: readonly [{ readonly name: 'DeepSeek Harness'; readonly schemes: readonly ['dsh'] }]
+  readonly protocols: readonly [{ readonly name: 'Fanyu harness'; readonly schemes: readonly ['fyh'] }]
   readonly directories: {
     readonly output: string
   }
@@ -50,7 +50,8 @@ export interface DesktopElectronBuilderConfig {
     readonly executableArgs: readonly string[]
   }
   readonly nsis: {
-    readonly uninstallDisplayName: '${productName}'
+    readonly uninstallDisplayName: string
+    readonly shortcutName: string
     readonly include: string
     readonly oneClick: false
     readonly perMachine: false

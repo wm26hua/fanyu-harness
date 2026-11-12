@@ -288,7 +288,13 @@ export function createElectronBuilderConfig(
       executableArgs: [],
     },
     nsis: {
-      uninstallDisplayName: '${productName}',
+      // Single-string Windows surfaces carry the Chinese product name, because Windows
+      // installs of this build serve a Chinese-language audience; `productName` stays
+      // ASCII so every derived path (bundle directory, executable, CLI launcher) is
+      // shell-safe. The parenthesised Latin name keeps the English brand discoverable
+      // in the Add/Remove Programs list.
+      uninstallDisplayName: '维普学域 (Fanyu harness)',
+      shortcutName: '维普学域',
       installerSidebar: join(buildPaths.root, 'installer-ui', 'uninstaller-sidebar.bmp'),
       uninstallerSidebar: join(buildPaths.root, 'installer-ui', 'uninstaller-sidebar.bmp'),
       include: fileURLToPath(new URL('./installer.nsh', import.meta.url)),

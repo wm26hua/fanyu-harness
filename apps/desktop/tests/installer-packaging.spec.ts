@@ -54,7 +54,8 @@ describe('installer preparation preserves application dependencies', () => {
       expect(appInfo.companyName).toBe('泛语科技')
       expect(appInfo.copyright).toMatch(/^Copyright © \d{4} 泛语科技$/u)
       if (platform === 'win32') {
-        expect(expandMacro(config.nsis.uninstallDisplayName, null, appInfo, {}, false)).toBe('Fanyu harness')
+        expect(expandMacro(config.nsis.uninstallDisplayName, null, appInfo, {}, false)).toBe('维普学域 (Fanyu harness)')
+        expect(config.nsis.shortcutName).toBe('维普学域')
         expect(config.nsis.installerLanguages).toEqual(readInstallerLocales().map(locale => locale.id))
       }
       const aboutIcon = config.extraResources.find(resource => resource.to === 'icon.png')
