@@ -45,7 +45,7 @@ wm26hua/fanyu-harness          ← 仓库根 = 代码根（package.json 在这�
 >
 > 失败的 run 会占用 Actions 存储，堆积久了需要手动清理。
 >
-> **`.github/dependabot.yml` 已删除。** 上游那份配置每天 4:00（Asia/Shanghai）为 npm / uv / github-actions 开升级 PR，每个 PR 都自带一个新分支并触发上面的 PR workflow 报红——删掉它是为了让「多余远端分支」不再自动再生。需要时从历史取回：`git show 13de5293:.github/dependabot.yml > .github/dependabot.yml`。
+> **`.github/dependabot.yml` 已删除。** 上游那份配置每天 4:00（Asia/Shanghai）为 npm / uv / github-actions 开升级 PR，每个 PR 都自带一个新分支并触发上面的 PR workflow 报红——删掉它是为了让「多余远端分支」不再自动再生。需要时从历史取回：`git show 33b6aa6e:.github/dependabot.yml > .github/dependabot.yml`。
 
 ---
 
@@ -132,7 +132,7 @@ git push origin <split-commit>:refs/heads/main           # 或走 PR 合并
 | --- | --- |
 | 分支 | **只有 `main`**；临时分支 `repo-root-fanyu-harness` 与 13 个 `dependabot/*` 分支已全部删除 |
 | tag | **零个**；`fanyu-desktop-v0.2.2-rc.1` 已删除（它当时指向旧布局的提交，且匹配工作流的 tag 触发器） |
-| `main` | 强制更新为抽取后的历史（`70831883...91394ef3 (forced update)`），此后两个提交：`13de5293` 文档、`7cc06126` 删除 dependabot 配置；旧布局的历史仍保留在工作区本地仓库 |
+| `main` | 强制更新为抽取后的历史（`70831883...91394ef3 (forced update)`），当前 tip `00ef34f0`（文档说明 + 删除 dependabot 配置）；旧布局的历史仍保留在工作区本地仓库 |
 | dependabot | `.github/dependabot.yml` 已删除，不再自动生成升级分支与 PR |
 | 本地工作区 | 仍按工作区根布局（`fanyu-harness/` 子目录）；新布局的对照工作树见 `logs/repo-worktree`（本地产物目录，不入库） |
 
