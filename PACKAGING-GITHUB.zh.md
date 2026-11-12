@@ -1,6 +1,6 @@
-# 用 GitHub Actions 打 Windows + Linux 包（配置与操作手册）
+# 用 GitHub Actions 打 Windows + Linux + macOS 包（配置与操作手册）
 
-目标：把 Windows 与 Linux 两个无签名安装包交给 GitHub 托管的 runner 构建，避免本机打包的环境依赖与耗时。**macOS 腿已刻意关闭**，原因见第二节。
+目标：把 Windows、Linux 与 macOS 三个平台的无签名安装包交给 GitHub 托管的 runner 构建，避免本机打包的环境依赖与耗时。三端（`win-x64` / `linux-x64` / `mac-arm64`）都在矩阵里，macOS 的分钟倍率代价见第二节末尾。
 
 ---
 
@@ -28,25 +28,27 @@ GitHub 只会读取**仓库根目录**的 `.github/workflows/`。
 
 ## 二、工作流做了什么
 
-矩阵**两条腿**（Windows + Linux），跑 GitHub 托管 runner，不发布、不需要任何密钥：
+矩阵**三条腿**（Windows + Linux + macOS），跑 GitHub 托管 runner，不发布、不需要任何密钥：
 
 | 目标 | runner | 命令 | 产出 |
 | --- | --- | --- | --- |
 | `linux-x64` | `ubuntu-24.04` | `pnpm --dir apps/desktop run package:linux:x64:unsigned` | `*.AppImage`、`*.deb`、`*.tar.gz` |
 | `win-x64` | `windows-latest` | `pnpm --dir apps/desktop run package:win:x64:unsigned` | `*.exe`（NSIS）+ `.blockmap` |
+| `mac-arm64` | `macos-15` | `pnpm --dir apps/desktop run package:mac:arm64:unsigned` | `*.dmg`（无签名配置只出 dmg，`zip` 属于签名发布流程） |
 
-> **macOS 腿是刻意去掉的**，不是遗漏。macOS 的打包脚本本身没动、仍可用；去掉的原因是**私有仓库里 GitHub 按 10 倍倍率扣 macOS runner 分钟**，一次三端构建约吃掉免费额度 2000 分钟里的 500 分钟。要重新启用，把 `mac-arm64` 那一项加回矩阵即可（命令见 `apps/desktop/package.json` 的 `package:mac:arm64:unsigned`）。**仓库转公开则不受分钟数限制。**
+> **macOS 腿已放回矩阵**（runner `macos-15`，Apple Silicon）。它之前被刻意去掉过：**私有仓库里 GitHub 按 10 倍倍率扣 macOS runner 分钟**，一次三端构建大约吃掉免费额度 2000 分钟里的 500 分钟。现在为了三端齐出，这个代价被接受；**仓库转公开则不受分钟数限制**。`mac-x64`（Intel）仍不在矩阵里——它需要 Intel 主机或 Rosetta，产物架构不同且在 arm64 镜像上无法验证，加回来会让 macOS 分钟成本翻倍；真要 Intel 包，加一条 runner 为 `macos-15-intel` 的 `mac-x64` 项（命令 `package:mac:x64:unsigned`）。
 
-- 两条腿都跑完整的 `pnpm install --frozen-lockfile` + `pnpm --dir apps/desktop run package:*`，含运行时准备与冒烟检查。
+- 三条腿都跑完整的 `pnpm install --frozen-lockfile` + `pnpm --dir apps/desktop run package:*`，含运行时准备与冒烟检查。
 - Windows 腿额外写一份占位 `apps/desktop/.env.windows`：**无签名 Windows 包仍会注入并校验强制更新策略**，所以必须有 HTTPS 占位域名与 `allowedAuthOrigins`。这些域名在构建期不会被访问。
 - Linux 腿装 `squashfs-tools` + `libfuse2t64`，并把 AppImage 解包校验 payload 结构。
+- macOS 腿**不写任何 `.env`**：`--unsigned` 走 `localMacOSPackageEnvironment()`，只用 `DSH_DESKTOP_APP_ID=com.fanyu.harness` 做 ad-hoc 签名，不读 `.env.macos`、不注入强制更新策略、不需要证书。打包后把 DMG 挂载起来，校验里面 `fanyu-harness.app` 的结构（可执行文件 + `Contents/Resources/app.asar`）。
 - 每条腿把产物上传为 artifact `fanyu-harness-<target>-unsigned`，保留 14 天。**不发布、不上传更新源、不做公证、不做签名。**
 
 ### 触发方式
 
 ```sh
 # 方式一：手动触发（推荐第一次用这个）
-#   GitHub 仓库页 → Actions → "Desktop packages (unsigned, windows + linux)" → Run workflow
+#   GitHub 仓库页 → Actions → "Desktop packages (unsigned, windows + linux + macos)" → Run workflow
 
 # 方式二：推 tag
 git tag fanyu-desktop-v0.2.2-rc.1
@@ -160,7 +162,7 @@ git push -u origin main     # 首次输入用户名 wm26hua + 粘贴 PAT（需�
 
 | | GitHub 托管 runner | 本机 |
 | --- | --- | --- |
-| 多平台同时构建 | ✅ Windows + Linux 两个 job 并行 | ❌ Windows 只能出 Windows 包 |
+| 多平台同时构建 | ✅ Windows + Linux + macOS 三个 job 并行 | ❌ Windows 只能出 Windows 包 |
 | Windows 前置 | 自带 VS 2022 + VC Tools | 需自己装约 4 GB 的 VS Build Tools |
 | 缓存 | `runner.tool_cache`（Electron 归档 + pnpm store），但**托管 runner 每次是新机器**，缓存靠 `tool_cache` 卷复用 | 可持续复用 |
 | 首次耗时 | `pnpm install` + 每条腿各自构建，Windows 通常 20–40 分钟 | 首次同样慢，之后增量快 |
@@ -183,7 +185,10 @@ git push -u origin main     # 首次输入用户名 wm26hua + 粘贴 PAT（需�
 | Windows 腿报 `.env.windows` 缺字段 | 工作流里那份占位配置被改动过；`.env.windows.example` 是权威清单 |
 | Linux 腿 `fpm ... failed 127` | 缺 `libcrypt`；Ubuntu 自带，如换镜像需补 |
 | 产物为空、`if-no-files-found: error` 报错 | 打包实际失败但退出码被吞；去该腿的 `Package` 步骤日志里找真正的错误 |
-| 想加回 macOS 腿 | 把 `mac-arm64` 加回矩阵（runner 用 `macos-15`，Apple Silicon）；注意私有仓库 10× 扣费 |
+| macOS 腿报 `requires an Apple Silicon build host` | runner 选错了；`mac-arm64` 只接受 arm64 宿主，托管镜像用 `macos-15` |
+| macOS 腿报缺少签名/公证凭证 | 该腿必须带 `--unsigned`（`package:mac:arm64:unsigned`）；不带时才会去读 `.env.macos` 与 `CSC_*`/`APPLE_*` |
+| macOS 腿 DMG 挂载或结构校验失败 | 校验脚本期望产物根下恰好一个 `*.dmg`，且 DMG 根有一个 `fanyu-harness.app`；先看 `unsigned-artifacts/` 里实际生成了什么 |
+| 想加回 Intel macOS 腿 | 加一条 runner 为 `macos-15-intel`、脚本为 `package:mac:x64:unsigned` 的 `mac-x64` 项；注意私有仓库 10× 扣费会再翻一倍 |
 
 ---
 

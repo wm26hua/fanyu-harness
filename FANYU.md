@@ -129,11 +129,11 @@ pnpm --dir apps/desktop run package:mac:x64:unsigned
 - macOS：`CSC_LINK` / `CSC_KEY_PASSWORD`、`DSH_DESKTOP_MACOS_SIGNING_IDENTITY`、`DSH_DESKTOP_MACOS_TEAM_ID`，以及一种公证策略。
 - 三端发布：`desktop-test` / `desktop-production` 环境与相应仓库密钥。
 
-## 持续集成（Windows + Linux）
+## 持续集成（Windows + Linux + macOS）
 
-上游自带的 `windows-package.yml` / `macos-package.yml` 绑定 DeepSeek 的自托管 runner（`dsh-win-package-trial`、`[self-hosted, macOS, ARM64, ...]`），泛语科技的仓库没有这些 runner。无签名构建使用本仓库新增的 `/.github/workflows/fanyu-desktop.yml`，跑在 GitHub 托管 runner 上（`windows-latest` + `ubuntu-24.04`），只产出无签名安装包（Windows NSIS exe / Linux AppImage + deb + tar.gz），不发布、不需要任何密钥。
+上游自带的 `windows-package.yml` / `macos-package.yml` 绑定 DeepSeek 的自托管 runner（`dsh-win-package-trial`、`[self-hosted, macOS, ARM64, ...]`），泛语科技的仓库没有这些 runner。无签名构建使用本仓库新增的 `/.github/workflows/fanyu-desktop.yml`，跑在 GitHub 托管 runner 上（`windows-latest` + `ubuntu-24.04` + `macos-15`），只产出无签名安装包（Windows NSIS exe / Linux AppImage + deb + tar.gz / macOS dmg），不发布、不需要任何密钥。
 
-**macOS 腿刻意关闭**：macOS 的打包脚本本身没动、仍可用（`pnpm --dir apps/desktop run package:mac:arm64:unsigned`），但私有仓库里 GitHub 按 10 倍倍率扣 macOS runner 分钟，一次三端构建约吃掉免费额度 2000 分钟里的 500 分钟。要重新启用，把 `mac-arm64` 加回工作流的矩阵即可；仓库转公开则不受分钟数限制。
+**macOS 腿只出 Apple Silicon**（`mac-arm64`，runner `macos-15`）：Intel 包（`mac-x64`）需要 Intel 主机或 Rosetta，产物架构不同且在 arm64 镜像上无法验证，所以不在矩阵里；真要 Intel 包时加一条 runner 为 `macos-15-intel`、脚本为 `package:mac:x64:unsigned` 的矩阵项。代价是私有仓库里 GitHub 按 10 倍倍率扣 macOS runner 分钟，一次三端构建约吃掉免费额度 2000 分钟里的 500 分钟；仓库转公开则不受分钟数限制。
 
 **注意工作流的位置**：git 根目录是工作区根，而 GitHub 只读取**仓库根目录**的 `.github/workflows/`。上游那 66 个 `.github/` 文件都在 `fanyu-harness/.github/` 下，因此全部不会在 GitHub 上运行；打包工作流必须放在工作区根的 `.github/workflows/`。细节与推送手册见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md)。
 
