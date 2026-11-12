@@ -103,7 +103,9 @@ describe('official browser-brand plugin', () => {
 
   it('renders the official name independently from both requested mark sizes', () => {
     const name = render(<OfficialBrandName />)
-    expect(name.container.querySelector('svg')?.getAttribute('viewBox')).toBe('26 0 156 24')
+    // The wordmark is brand text now, not upstream wordmark artwork.
+    expect(name.container.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 126 24')
+    expect(name.container.querySelector('text')?.textContent).toBe('Fanyu harness')
     name.unmount()
 
     const mark = render(<OfficialBrandMark size={34} />)
