@@ -1,6 +1,6 @@
 # Fanyu harness — 泛语科技下游发行版
 
-本仓库是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的下游发行版，由泛语科技维护。产品名为 **Fanyu harness**，公司名为 **泛语科技**。
+本仓库是 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 的下游发行版，由泛语科技维护。产品中文名为 **维普学域**，英文名为 **Fanyu harness**，公司名为 **泛语科技**。
 
 Fanyu harness is developed by 泛语科技 and built on DeepSeek Harness (`dsh`). DeepSeek Harness is a trademark of DeepSeek; this project is not affiliated with or endorsed by DeepSeek.
 
@@ -20,20 +20,25 @@ git 根目录是**工作区根**（`fanyu-harness/` 的上一级），`fanyu-har
 - `git` 命令在**工作区根目录**执行
 - `pnpm` / `npm` 命令在 **`fanyu-harness/`** 内执行
 
-历史只有两段：`init: DeepSeek Harness v0.2.2-rc.1 官方最新版快照`（上游发布版本的完整工作树，不含上游历史），以及其后的 6 个提交（品牌化 + Linux 打包、去掉登录页、3 个修正/文档提交）。
+历史只有两段：`init: DeepSeek Harness v0.2.2-rc.1 官方最新版快照`（上游发布版本的完整工作树，不含上游历史），以及其后的下游提交（品牌化 + Linux 打包、去掉登录页、若干修正/文档提交，以及维普学域品牌改造）。
 
 ## 与上游的差异
 
 只有下面三类改动，内部功能全部保持上游默认行为。
 
-### 1. 品牌：泛语科技 / Fanyu harness
+### 1. 品牌：维普学域 / Fanyu harness
+
+产品中文名为 **维普学域**，英文名为 **Fanyu harness**，法律主体仍是 **泛语科技**（`copyright`、`author`、`homepage` 不变）。
 
 - `productName`、协议显示名、安装包文件名前缀、macOS 麦克风用途说明改为 Fanyu harness。
 - `appId` 默认值与四份打包 env 示例改为 `com.fanyu.harness`。
 - `copyright` 为 `Copyright © 2026 泛语科技`；`apps/desktop/package.json` 的 `author` 为 `泛语科技 <dev@fanyu.tech>`（deb/FPM maintainer 来源）。
 - Windows 安装器 8 种语言文案、安装失败报告标题、macOS 应用包名、Windows 可执行文件名与 `dsh` 命令行入口同步改名。
-- **图标仍沿用原有小鲸鱼图标**，所有图标与品牌美术资源字节未改动。
+- **Windows 单一字符串面用中文名**：`uninstallDisplayName = 维普学域 (Fanyu harness)`、`shortcutName = 维普学域`；`productName` 仍是 ASCII 的 `Fanyu harness`，保证 bundle 目录、可执行文件与 CLI 入口路径安全。
+- 应用内文案按界面语言分流：`zh` 用「维普学域」，其余 7 种语言用「Fanyu harness」。
 - 身份字符串集中在一处：`apps/desktop/scripts/desktop-product-identity.mjs`（`DESKTOP_PRODUCT_NAME`、`DESKTOP_ARTIFACT_PREFIX`、`DESKTOP_EXECUTABLE_NAME`、`DESKTOP_PROTOCOL_SCHEME`），所有产物名与路径从这里派生，避免改名后生产者与消费者不一致。
+- **图标已换成维普学域标记**（上游鲸鱼图标已被替换）：三平台图标源与位图、托盘 ICO、安装器品牌图与卸载侧栏图、欢迎页字标、Web/PWA 图标与 favicon、应用内侧栏标记与字标。清单与重生成命令见 [`BRANDING.zh.md`](./BRANDING.zh.md)。
+- 仍有未改的品牌面（动画类鲸鱼美术、应用内其余文案、文档站、包元数据等）同样登记在 [`BRANDING.zh.md`](./BRANDING.zh.md)。
 
 #### 机器可读名统一为 `fyh`，显示名仍是 Fanyu harness
 
@@ -126,7 +131,9 @@ pnpm --dir apps/desktop run package:mac:x64:unsigned
 
 ## 三端持续集成
 
-上游自带的 `windows-package.yml` / `macos-package.yml` 绑定 DeepSeek 的自托管 runner（`dsh-win-package-trial`、`[self-hosted, macOS, ARM64, ...]`），泛语科技的仓库没有这些 runner。三端无签名构建使用本仓库新增的 `.github/workflows/fanyu-desktop.yml`，跑在 GitHub 托管 runner 上（`windows-latest` / `macos-latest` / `ubuntu-24.04`），只产出无签名安装包，不发布、不需要任何密钥。
+上游自带的 `windows-package.yml` / `macos-package.yml` 绑定 DeepSeek 的自托管 runner（`dsh-win-package-trial`、`[self-hosted, macOS, ARM64, ...]`），泛语科技的仓库没有这些 runner。三端无签名构建使用本仓库新增的 `/.github/workflows/fanyu-desktop.yml`，跑在 GitHub 托管 runner 上（`windows-latest` / `macos-15` / `ubuntu-24.04`），只产出无签名安装包，不发布、不需要任何密钥。
+
+**注意工作流的位置**：git 根目录是工作区根，而 GitHub 只读取**仓库根目录**的 `.github/workflows/`。上游那 66 个 `.github/` 文件都在 `fanyu-harness/.github/` 下，因此全部不会在 GitHub 上运行；三端打包工作流必须放在工作区根的 `.github/workflows/`。细节与推送手册见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md)。
 
 ## 从上游同步
 
@@ -155,11 +162,15 @@ cd fanyu-harness && pnpm install --frozen-lockfile && pnpm run build && pnpm exe
 
 ## 已知差距（后续迭代）
 
-1. **文字标识（wordmark）仍是 DeepSeek 的**：安装器首屏 `apps/desktop/installer/assets/brand*.png`、欢迎页 `renderer/assets/welcome-brand.svg`、侧边栏 `BrandWordmark` 仍显示 "deepseek HARNESS" 字样。按「图标沿用现有小鲸鱼、不新做美术」的决定，本轮只改字符串与元数据，需要后续设计排期。
-2. **应用内文案仍为上游原文**：About 面板、托盘菜单、退出确认、欢迎页标题等仍显示 DeepSeek Harness（这些由 `apps/desktop/src/locale.ts` 等提供）。按「内部功能先不改」的要求本轮未动。
-3. **网页端标题**：`scripts/client-build-environment.ts` 的 `DSH_CLIENT_TITLE` 仍为上游值，改动会牵动 8 条断言，留待文案轮。
-4. **文档站标题**：`website/.vitepress/config.ts` 等仍是 DeepSeek Harness，与已改名的文档首页 H1 不一致。
-5. **发布/更新链路**：`installed-update-distribution.ts` 中 Windows 更新包文件名仍带 `deepseek-harness-` 前缀；自托管上传与更新订阅属于发布阶段，本轮未接。
+完整台账见 [`BRANDING.zh.md`](./BRANDING.zh.md)（含文件与行号）。要点：
+
+1. **动画类鲸鱼美术仍是上游的**：首页大号鲸鱼（`ui-conversation/.../EmptyHero.tsx`，其摆尾变形路径由上游鲸鱼几何程序化生成，换标记会静默撕裂 morph）、首页点击的像素鲸鱼（`ui-brand-official/src/client/home-whale/`，137 帧图集按通道编码，不是换图能解决）、对话加载鲸鱼尾 `running-whale@2x.png`（APNG + alpha mask 语义）。
+2. **应用内其余文案仍为上游原文**：`ui-plugin-manager`（约 200 处）、`ui-settings-models`、`ui-model-selection`、`ui-chat`、`ui-conversation`、`ui-agent-preset`、`ui-plugin-market`、`ui-settings-session-log` 等，以及 28 个 `locale/*.json` 的插件清单卡片文案。
+3. **侧栏字标是拉丁的**：本轮把字标改成了文字，但固定为 `Fanyu harness`；中文界面要显示「维普学域」需给 `sidebar.brand.name` 的 owner props 增加本地化品牌名，会牵动槽契约与其测试，故未做。
+4. **文档站标题与字标**：`website/.vitepress/config.ts` 的站点标题、导航栏内联的 DeepSeek 矢量字标、社交与「编辑此页」链接（指向上游仓库）仍是上游品牌；`docs/**` 亦同。
+5. **发布/更新链路**：`installed-update-distribution.ts` 的更新包文件名、`desktop-auto-update-environment.mjs` 的 `dsh-latest-*` 公开下载名，以及三处互相咬合的 `download.deepseek.com` 域名校验属于发布阶段，本轮未接。
+6. **`dsh` CLI 命令名未改**：机器可读名已统一为 `fyh`，但命令行入口（`/usr/local/bin/dsh`、`dsh.cmd`、注册表键 `Software\DeepSeekHarness\Command`）仍是 `dsh`。属功能改动，建议随下一个小版本处理。
+7. **遥测默认出口指向上游供应商**：`packages/host/product-telemetry-otel/src/index.ts` 默认 collector 是 `deepseeksvc.com`；`packages/llm/llm/src/attribution.ts` 的 `product` token 同时是服务端特性开关 key（代价不对称）。属合规/协议议题，不在文案轮。
 
 ## 已知问题：Linux 上 Electron + sharp 的 glib 冲突
 
