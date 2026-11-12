@@ -4,25 +4,41 @@
 
 ---
 
-## 一、最关键的结论：之前那份 workflow 永远不会运行
+## 一、最关键的结论：仓库根必须就是代码目录（已按此调整）
 
 GitHub 只会读取**仓库根目录**的 `.github/workflows/`。
 
-本仓库的 git 根目录是**工作区根**（`fanyu-desktop/`），而全部 66 个 `.github/` 文件都在**代码子目录** `fanyu-harness/.github/` 下。结果是：
+之前本仓库的 git 根是**工作区根**（`fanyu-desktop/`），而代码与全部 `.github/` 文件都在**下一层** `fanyu-harness/` 里。结果是：
 
-- 上游自带的 80 多个 workflow（`ci.yml`、`windows-package.yml`、`macos-package.yml`…）**一个都没在 GitHub 上跑过**；
-- 之前放在 `fanyu-harness/.github/workflows/fanyu-desktop.yml` 的三平台打包工作流**同样从未运行**。
+- 上游自带的 32 个 workflow（`ci.yml`、`windows-package.yml`、`macos-package.yml`…）**一个都没在 GitHub 上跑过**；
+- 当时放在根目录的 `/.github/workflows/fanyu-desktop.yml` 是唯一会被读取的工作流，靠 `defaults.run.working-directory: fanyu-harness` + 产物路径前缀 `fanyu-harness/...` 硬撑；
+- 放在 `fanyu-harness/.github/workflows/` 里的任何副本**永远不会运行**。
 
-本轮已修正：
+**本轮已改为：仓库根就是代码目录。** `fanyu-harness/` 的内容被抽成独立历史（`git subtree split --prefix=fanyu-harness`），直接作为 `wm26hua/fanyu-harness` 的树：
 
-| 动作 | 路径 |
+```
+wm26hua/fanyu-harness          ← 仓库根 = 代码根（package.json 在这层）
+├── .github/workflows/
+│   ├── fanyu-desktop.yml              ← 我们的三端无签名打包（唯一需要维护的那份）
+│   └── … 31 个上游 workflow            ← 现在起会被 GitHub 真正读取，见下方警示
+├── apps/desktop/scripts/package-target.ts
+└── package.json
+```
+
+相应调整：
+
+| 动作 | 结果 |
 | --- | --- |
-| **新增**（GitHub 实际读取的位置） | `/.github/workflows/fanyu-desktop.yml`（工作区根，已入库） |
-| **删除**（永远不会运行的死副本） | `fanyu-harness/.github/workflows/fanyu-desktop.yml` |
+| 工作流位置 | `fanyu-harness/.github/workflows/fanyu-desktop.yml`（GitHub 直接读取，不再需要根目录那份） |
+| `defaults.run.working-directory` | **已删除** |
+| 产物路径前缀 | `fanyu-harness/apps/desktop/...` → `apps/desktop/...` |
+| 工作区根的 `/.github/workflows/fanyu-desktop.yml` | **已删除**（死副本，避免以后改错一份） |
 
-新工作流用 `defaults.run.working-directory: fanyu-harness` 把每条命令落到代码目录，并把所有产物路径前缀成 `fanyu-harness/apps/desktop/...`。**两份文件之间没有任何自动联动**，所以死副本直接删掉，避免以后又改错那一份。
-
-> 附带好处：`fanyu-harness/.github/` 下那些绑定 DeepSeek 自托管 runner 的上游 workflow 依然不会运行，不会因为找不到 `dsh-win-package-trial` 之类 runner 而报红。
+> **警示：上游那 31 个 workflow 现在会被真正读取。** 它们原本就是为 DeepSeek 的自托管 runner 写的（`dsh-win-ci`、`dsh-mac-package-trial`、`blacksmith-*`…），我们这边没有这些 runner，所以：
+> - `pull_request` 触发的（`ci.yml`、`ci-windows.yml`、`ci-python.yml`、`expected-filenames.yml` 等）在开 PR 时会报红；
+> - 推到 `main` 会触发 `ci-master.yml`、`sandbox.yml`、`release.yml`、`release-vendor.yml`、`e2e.yml`、`node-addon-system.yml`、`pr-check-on-base-branch.yml`。
+>
+> 它们与桌面打包互不影响（失败不会拦推送），但如果不想看到一串红叉，在 GitHub 的 **Actions 页面**把对应 workflow 逐个 **Disable workflow** 即可；彻底的办法是删掉这些上游 `.yml`（注意 `scripts/*-workflow.spec.ts` 会读取它们做断言，删之前先删/改对应 spec）。
 
 ---
 
@@ -66,7 +82,7 @@ git push origin fanyu-desktop-v0.2.2-rc.1
 | 条件 | 状态 |
 | --- | --- |
 | Node ≥ 24.9 | 工作流用 `actions/setup-node@v7.0.0` 装 Node 24 ✓ |
-| pnpm **11.28.5** | 工作流显式写 `version: 11.28.5`。**必须显式写**：`pnpm/action-setup` 默认去仓库根找 `package.json` 读 `packageManager`，而本仓库的 `package.json` 在 `fanyu-harness/` 下，自动发现会失败。改版本时请与 `fanyu-harness/package.json` 的 `packageManager` 同步。 |
+| pnpm **11.28.5** | 工作流显式写 `version: 11.28.5`。仓库根现在就是 `package.json` 所在层，自动发现本来也能work，但仍**显式写**，避免以后根层多出别的手册时被悄悄改掉 pnpm 版本。改版本时请与根 `package.json` 的 `packageManager` 同步。 |
 | Windows 需要 MSVC C++ 工具链 | `desktop-toolchain-preflight.ts` 用 `vswhere -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64` 预检，缺了直接终止（安装器外壳 `installer/window-frame.cpp` 要用 `cl.exe` 编译）。`windows-latest` 自带 ✓ |
 | Linux 需要 FUSE 2 与 squashfs 工具 | 工作流里用 `apt-get` 装 `libfuse2t64`（24.04 的新名字）与 `squashfs-tools` ✓ |
 | 任何 Secrets | **不需要**。工作流里没有一处引用 `secrets.*` |
@@ -75,9 +91,9 @@ git push origin fanyu-desktop-v0.2.2-rc.1
 
 ---
 
-## 四、第一次推送
+## 四、仓库根调整与推送
 
-仓库目标：**`wm26hua/fanyu-harness`（私有）**。本会话已把 `origin` 配好：
+仓库：**`wm26hua/fanyu-harness`（私有）**，`origin` 已配好；本机走 GitHub 的 SSH-over-443（`core.sshCommand = ssh -p 443 -o HostName=ssh.github.com`，22 端口被本机代理截断）。
 
 ```sh
 git remote -v
@@ -87,21 +103,23 @@ git remote -v
 # upstream   https://github.com/deepseek-ai/deepseek-harness.git
 ```
 
-推送步骤：
-
-1. 在 GitHub 上建一个**空的私有仓库** `fanyu-harness`（**不要**勾选 README / .gitignore / license，否则会与本地历史冲突）。
-2. 先确认工作树状态、提交本轮改动。
-3. 提交并推送。
+把 `fanyu-harness/` 抽成仓库根（保留历史）：
 
 ```sh
-# 在 fanyu-desktop/（工作区根）执行
-git status --short
-git add -A
-git commit -m "feat(brand): 维普学域 / Fanyu harness 品牌改造"
-git push -u origin main
+# 在工作区根 fanyu-desktop/ 执行
+git subtree split --prefix=fanyu-harness HEAD            # 得到抽好的提交，形如 508ba6c3
+git push origin <split-commit>:refs/heads/repo-root-fanyu-harness   # 先推临时分支
 ```
 
-**本仓库的当前状态：以上都已完成。** 三个提交（`53546641` 图标 / `7c5cd929` 命名 / `c2ed77b4` CI+文档）已推到 `origin/main`。推送后到 `https://github.com/wm26hua/fanyu-harness/actions` 即可看到工作流——**这是验证「位置修对了」的唯一可靠办法**。
+在 GitHub 上核对 `repo-root-fanyu-harness` 的内容与 `fanyu-harness/.github/workflows/` 是否正确读取后，再切换默认分支：
+
+```sh
+git push origin <split-commit>:refs/heads/main           # 或走 PR 合并
+```
+
+工作区那边建议 `git reset --hard origin/main` 保持与远端一致——**工作区根的 `README.md`、`.gitignore`、`.gitattributes` 不属于新仓库**，仓库内的说明见 [`README.md`](./README.md)、[`FANYU.md`](./FANYU.md) 与本文件。
+
+推送后到 `https://github.com/wm26hua/fanyu-harness/actions` 即可看到工作流列表——**这是验证「位置修对了」的唯一可靠办法**。
 
 ---
 
@@ -179,7 +197,7 @@ git push -u origin main     # 首次输入用户名 wm26hua + 粘贴 PAT（需�
 | 现象 | 原因与处理 |
 | --- | --- |
 | Actions 页面里**根本看不到**这个工作流 | 工作流没在仓库根 `.github/workflows/`；确认 `git ls-files \| grep '^\.github/'` 有输出 |
-| `pnpm: command not found` 或 pnpm 版本不对 | `pnpm/action-setup` 的 `version` 与 `fanyu-harness/package.json` 的 `packageManager` 不一致 |
+| `pnpm: command not found` 或 pnpm 版本不对 | `pnpm/action-setup` 的 `version` 与根 `package.json` 的 `packageManager` 不一致 |
 | Windows 腿在 `toolchain` 步骤失败 | runner 镜像里缺 `Microsoft.VisualStudio.Component.VC.Tools.x86.x64` |
 | `pnpm install` 因 lockfile 政策失败 | pnpm 版本低于 11.28.5 |
 | Windows 腿报 `.env.windows` 缺字段 | 工作流里那份占位配置被改动过；`.env.windows.example` 是权威清单 |

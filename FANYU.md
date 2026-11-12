@@ -15,12 +15,14 @@ Fanyu harness is developed by 泛语科技 and built on DeepSeek Harness (`dsh`)
 
 ## 仓库布局
 
-git 根目录是**工作区根**（`fanyu-harness/` 的上一级），`fanyu-harness/` 是代码子目录。仓库只跟踪 `fanyu-harness/`、`README.md` 与 `.gitignore`，其余（`logs/`、`artifacts/`、`tools/`、`.cache/`、`node_modules/`、`.desktop-build/`）全部忽略。
+**仓库根就是代码根**：本目录（原来的 `fanyu-harness/`）被抽成独立历史后直接作为 `wm26hua/fanyu-harness` 的树，`package.json`、`pnpm-workspace.yaml` 与 `.github/` 都在根层。
 
-- `git` 命令在**工作区根目录**执行
-- `pnpm` / `npm` 命令在 **`fanyu-harness/`** 内执行
+- `git`、`pnpm` / `npm` 命令都在**仓库根目录**执行（`pnpm install --frozen-lockfile`、`pnpm run build` 等）
+- 工作区的 `logs/`、`artifacts/`、`tools/`、`.cache/` 等本地产物**不属于本仓库**；`node_modules/`、`.desktop-build/` 等按根 `.gitignore` 忽略
 
-历史只有两段：`init: DeepSeek Harness v0.2.2-rc.1 官方最新版快照`（上游发布版本的完整工作树，不含上游历史），以及其后的下游提交（品牌化 + Linux 打包、去掉登录页、若干修正/文档提交，以及维普学域品牌改造）。
+之所以要把仓库根从工作区根下移到代码目录：GitHub 只读取**仓库根目录**的 `.github/workflows/`。放在上一层时，上游 32 个 workflow 与打包工作流都读不到；调整后 `.github/workflows/fanyu-desktop.yml` 与上游那些 workflow 一起被正常读取。经过与取舍见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md) 第一节。
+
+历史共 19 个提交：`init: DeepSeek Harness v0.2.2-rc.1 官方最新版快照`（上游发布版本的完整工作树，不含上游历史），以及其后的 18 个下游提交（品牌化 + Linux 打包、去掉登录页、机器名 `fyh`、安装器修复、若干文档/测试基线，以及维普学域品牌改造与 macOS 腿放回）。
 
 ## 与上游的差异
 
@@ -131,11 +133,11 @@ pnpm --dir apps/desktop run package:mac:x64:unsigned
 
 ## 持续集成（Windows + Linux + macOS）
 
-上游自带的 `windows-package.yml` / `macos-package.yml` 绑定 DeepSeek 的自托管 runner（`dsh-win-package-trial`、`[self-hosted, macOS, ARM64, ...]`），泛语科技的仓库没有这些 runner。无签名构建使用本仓库新增的 `/.github/workflows/fanyu-desktop.yml`，跑在 GitHub 托管 runner 上（`windows-latest` + `ubuntu-24.04` + `macos-15`），只产出无签名安装包（Windows NSIS exe / Linux AppImage + deb + tar.gz / macOS dmg），不发布、不需要任何密钥。
+上游自带的 `windows-package.yml` / `macos-package.yml` 绑定 DeepSeek 的自托管 runner（`dsh-win-package-trial`、`[self-hosted, macOS, ARM64, ...]`），泛语科技的仓库没有这些 runner。无签名构建使用本仓库新增的 `.github/workflows/fanyu-desktop.yml`，跑在 GitHub 托管 runner 上（`windows-latest` + `ubuntu-24.04` + `macos-15`），只产出无签名安装包（Windows NSIS exe / Linux AppImage + deb + tar.gz / macOS dmg），不发布、不需要任何密钥。
 
 **macOS 腿只出 Apple Silicon**（`mac-arm64`，runner `macos-15`）：Intel 包（`mac-x64`）需要 Intel 主机或 Rosetta，产物架构不同且在 arm64 镜像上无法验证，所以不在矩阵里；真要 Intel 包时加一条 runner 为 `macos-15-intel`、脚本为 `package:mac:x64:unsigned` 的矩阵项。代价是私有仓库里 GitHub 按 10 倍倍率扣 macOS runner 分钟，一次三端构建约吃掉免费额度 2000 分钟里的 500 分钟；仓库转公开则不受分钟数限制。
 
-**注意工作流的位置**：git 根目录是工作区根，而 GitHub 只读取**仓库根目录**的 `.github/workflows/`。上游那 66 个 `.github/` 文件都在 `fanyu-harness/.github/` 下，因此全部不会在 GitHub 上运行；打包工作流必须放在工作区根的 `.github/workflows/`。细节与推送手册见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md)。
+**上游那 31 个 workflow 现在也会被 GitHub 读取。** 仓库根已下移到代码目录，它们和工作流同处 `.github/workflows/`。这些上游 workflow 依赖 DeepSeek 的自托管 runner，我们这边不存在，所以 `pull_request` 类与推到 `main` 时触发的那几个会报红（详见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md) 第一节的警示）。它们与桌面打包互不影响；不想看到红叉就在 Actions 页面逐个 Disable workflow。
 
 ## 从上游同步
 
@@ -145,7 +147,7 @@ pnpm --dir apps/desktop run package:mac:x64:unsigned
 git fetch upstream master
 git log --oneline main..upstream/master        # 看上游新增了什么
 git merge upstream/master --allow-unrelated-histories   # 只有第一次需要该参数，见下
-cd fanyu-harness && pnpm install --frozen-lockfile && pnpm run build && pnpm exec vitest run apps/desktop/tests
+pnpm install --frozen-lockfile && pnpm run build && pnpm exec vitest run apps/desktop/tests
 ```
 
 注意：`init` 提交是**快照**，与上游 git 历史没有共同祖先，所以第一次合并必须带 `--allow-unrelated-histories`（冲突会集中在 `apps/desktop/{scripts,src}`、`installer`、`docs`）；合并一次之后两边就有了共同祖先，后续 `git merge upstream/master` 即可。

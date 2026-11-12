@@ -6,6 +6,8 @@ Fanyu harness is 泛语科技's distribution of DeepSeek Harness (`dsh`), the op
 
 Fanyu harness is **built on DeepSeek Harness** and is not affiliated with, sponsored by, or endorsed by DeepSeek. "DeepSeek Harness" is a trademark of DeepSeek, used here only to describe this project's upstream.
 
+This repository **is** the code root: `pnpm` commands run here. Downstream-only notes live in [`FANYU.md`](FANYU.md) (deltas from upstream, packaging, placeholders), [`BRANDING.zh.md`](BRANDING.zh.md) (brand ledger) and [`PACKAGING-GITHUB.zh.md`](PACKAGING-GITHUB.zh.md) (Windows/Linux/macOS packaging on GitHub Actions).
+
 It is built on an **everything-is-a-plugin** architecture and powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://arxiv.org/abs/2608.25512).
 
 Documentation: [https://deepseek-harness.github.io/deepseek-harness/](https://deepseek-harness.github.io/deepseek-harness/)
