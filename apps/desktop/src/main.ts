@@ -1433,7 +1433,7 @@ async function main(): Promise<void> {
     windowsLanguage = locale.id
     refreshApplicationMenu()
     // The workspace opens on every launch, including a first launch with no credential or key;
-    // the welcome entry remains the sign-out destination and the account menu owns in-app sign-in.
+    // the welcome entry remains the sign-out destination and the settings account section owns in-app sign-in.
     await enterWorkspace()
   }
   focusPrimaryWindow = () => {

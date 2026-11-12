@@ -127,12 +127,17 @@ describe.skipIf(MODE === 'record')('web e2e: DeepSeek account sign-in in a plain
     await page.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
     const menu = page.getByRole('button', { name: 'Account menu', exact: true })
     await menu.click()
+    await page.getByRole('menuitem', { name: 'Settings', exact: true }).click()
+    const settings = page.getByRole('dialog', { name: 'Settings', exact: true })
+    const account = settings.getByRole('region', { name: 'Account', exact: true })
     const tab = context.waitForEvent('page')
-    await page.getByRole('menuitem', { name: 'Sign in', exact: true }).click()
+    await account.getByRole('button', { name: 'Sign in', exact: true }).click()
     const authorization = await tab
     await authorization.waitForURL(url => url.pathname === '/dsh/authorized', { timeout: 30_000 })
     expect(await authorization.evaluate(() => window.opener === null)).toBe(true)
     await expect.poll(() => menu.textContent(), { timeout: 30_000 }).toBe('Web User')
+    await settings.getByRole('button', { name: 'Close', exact: true }).click()
+    await settings.waitFor({ state: 'detached' })
 
     const pageOrigin = new URL(scaffold.authenticatedUrl).origin
     expect(platform.inits).toHaveLength(1)
@@ -157,8 +162,6 @@ describe.skipIf(MODE === 'record')('web e2e: DeepSeek account sign-in in a plain
     await capture('Initial load')
     await menu.click()
     await page.getByRole('menuitem', { name: 'Settings', exact: true }).click()
-    const settings = page.getByRole('dialog', { name: 'Settings', exact: true })
-    const account = settings.getByRole('region', { name: 'Account', exact: true })
     await expect.poll(platform.avatarRequests).toBe(2)
     await account.locator('[data-avatar-status="failed"]').waitFor()
     expect(await menu.locator('img').count()).toBe(0)

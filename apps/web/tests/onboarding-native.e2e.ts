@@ -65,13 +65,13 @@ describe.skipIf(MODE === 'record').each([false, true])('web e2e: native credenti
       await accountMenu.click()
       const menu = page.getByRole('menu')
       await menu.waitFor()
-      expect(await menu.getByRole('menuitem').count()).toBe(3)
-      for (const name of ['设置', '意见反馈', '登录']) {
+      expect(await menu.getByRole('menuitem').count()).toBe(2)
+      for (const name of ['设置', '意见反馈']) {
         expect(await menu.getByRole('menuitem', { name, exact: true }).count()).toBe(1)
       }
       const menuBox = (await menu.boundingBox())!
       expect(Math.abs(menuBox.width - 124)).toBeLessThan(1)
-      expect(Math.abs(menuBox.height - 128)).toBeLessThan(1)
+      expect(Math.abs(menuBox.height - 88)).toBeLessThan(1)
       expect(Math.abs(triggerBox.y - (menuBox.y + menuBox.height) - 4)).toBeLessThan(1)
       for (const row of await menu.getByRole('menuitem').all()) {
         const rowBox = (await row.boundingBox())!

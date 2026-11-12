@@ -86,6 +86,7 @@ pnpm --filter @deepseek-ai/dsh-web-frontend run render:app-icons  # apps/web/pub
 - 侧栏品牌行（[`ui-sidebar/src/client/SidebarRoot.tsx`](./packages/client/ui-sidebar/src/client/SidebarRoot.tsx)）不再显示「维普学域本地构建 + 构建号」：标记槽由 [`ui-brand-official`](./packages/client/ui-brand-official/src/client/Brand.tsx) 的 `OfficialBrandMark`（vi 渐变标记）填充；名称走公共字典新增键 `brand.name`（zh「维普学域」，其余 7 语言「Fanyu harness」）。构建号复制功能、相关 `copyVersion` 样式与 `version.copied` 文案一并移除。
 - 首页空态标题（[`ui-conversation/src/client/skeleton/EmptyHero.tsx`](./packages/client/ui-conversation/src/client/skeleton/EmptyHero.tsx)）从「鲸鱼 + 探索未至之境 + 预览版」改为「vi 标记 + 品牌名」：`hero.headline` 各语言值改为品牌名，删除 `hero.preview` 与预览徽标样式。
 - `ui-brand-official` 的品牌槽注册不再受 `DSH_CLIENT_BUILD_PROFILE === 'official'` 限制——本发行版在 local / official 两种构建 profile 都输出自家品牌；`OfficialBrandName` 文本字标组件删除（本地化名称改由宿主文案座椅提供）。
+- 左下角账号菜单（[`ui-settings-account/src/client/AccountMenu.tsx`](./packages/client/ui-settings-account/src/client/AccountMenu.tsx)）不再提供「登录」快捷项：未登录时只保留「设置 / 意见反馈」，登录统一从「设置 → 账号与余额」发起；已登录时的「退出登录」保留。
 
 ---
 
