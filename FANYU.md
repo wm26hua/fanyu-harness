@@ -137,7 +137,9 @@ pnpm --dir apps/desktop run package:mac:x64:unsigned
 
 **macOS 腿只出 Apple Silicon**（`mac-arm64`，runner `macos-15`）：Intel 包（`mac-x64`）需要 Intel 主机或 Rosetta，产物架构不同且在 arm64 镜像上无法验证，所以不在矩阵里；真要 Intel 包时加一条 runner 为 `macos-15-intel`、脚本为 `package:mac:x64:unsigned` 的矩阵项。代价是私有仓库里 GitHub 按 10 倍倍率扣 macOS runner 分钟，一次三端构建约吃掉免费额度 2000 分钟里的 500 分钟；仓库转公开则不受分钟数限制。
 
-**上游那 31 个 workflow 现在也会被 GitHub 读取。** 仓库根已下移到代码目录，它们和工作流同处 `.github/workflows/`。这些上游 workflow 依赖 DeepSeek 的自托管 runner，我们这边不存在，所以 `pull_request` 类与推到 `main` 时触发的那几个会报红（详见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md) 第一节的警示）。它们与桌面打包互不影响；不想看到红叉就在 Actions 页面逐个 Disable workflow。
+**上游那 31 个 workflow 现在也会被 GitHub 读取，并且刻意保持不动。** 仓库根已下移到代码目录，它们和工作流同处 `.github/workflows/`。这些上游 workflow 依赖 DeepSeek 的自托管 runner，我们这边不存在，所以推到 `main`、开 PR、以及 `e2e.yml` 的 nightly schedule 都会产生红色 run（`ci-master.yml`、`sandbox.yml`、`release.yml`、`release-vendor.yml`、`node-addon-system.yml`、`pr-check-on-base-branch.yml`、`e2e.yml` 为 push 触发）。
+
+**当前决定：不删除、不 Disable，就让它们报红。** 它们与桌面打包互不影响（失败不拦推送、不消耗托管 runner 分钟，因为根本找不到匹配的自托管 runner）。想改这个决定时的两种做法见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md) 第一节末尾。
 
 ## 从上游同步
 

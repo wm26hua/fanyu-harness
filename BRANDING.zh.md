@@ -216,6 +216,6 @@ pnpm --filter @deepseek-ai/dsh-web-frontend run render:app-icons  # apps/web/pub
 ## 五、上游同步注意事项
 
 - **仓库根就是代码根**：本目录（原 `fanyu-harness/`）已抽成独立历史并直接作为仓库树，`git` 与 `pnpm` 命令都在根目录执行。
-- **GitHub 只读仓库根目录的 `.github/workflows/`**。仓库根下移后，上游那 31 个 workflow（含绑定 DeepSeek 自托管 runner 的 `windows-package.yml` / `macos-package.yml`）现在会被真正读取并可能在 Actions 页面报红——它们与桌面打包互不影响，处置方式见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md) 第一节的警示。
+- **GitHub 只读仓库根目录的 `.github/workflows/`**。仓库根下移后，上游那 31 个 workflow（含绑定 DeepSeek 自托管 runner 的 `windows-package.yml` / `macos-package.yml`）现在会被真正读取并报红——**当前决定不动它们**，它们与桌面打包互不影响；处置选项见 [`PACKAGING-GITHUB.zh.md`](./PACKAGING-GITHUB.zh.md) 第一节。
 - 与上游 merge 时的优先级：**身份字段、图标美术与本清单以本仓库为准**（`desktop-product-identity.mjs`、`package-target.ts` 的 linux 目标、`electron-builder-config.mjs` 的 linux 段与 policy 注入条件、`main.ts` 的首次启动分支、`resources/icon*.{svg,png}`、`installer/assets/*`），其余跟随上游。
 - 每次同步上游后，请重跑 `render:tray-icon` 与 `render:app-icons`，并用 `git diff --stat` 确认图标位图没有被上游覆盖。

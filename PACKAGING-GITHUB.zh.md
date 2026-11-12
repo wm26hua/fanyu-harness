@@ -34,11 +34,16 @@ wm26hua/fanyu-harness          ← 仓库根 = 代码根（package.json 在这�
 | 产物路径前缀 | `fanyu-harness/apps/desktop/...` → `apps/desktop/...` |
 | 工作区根的 `/.github/workflows/fanyu-desktop.yml` | **已删除**（死副本，避免以后改错一份） |
 
-> **警示：上游那 31 个 workflow 现在会被真正读取。** 它们原本就是为 DeepSeek 的自托管 runner 写的（`dsh-win-ci`、`dsh-mac-package-trial`、`blacksmith-*`…），我们这边没有这些 runner，所以：
-> - `pull_request` 触发的（`ci.yml`、`ci-windows.yml`、`ci-python.yml`、`expected-filenames.yml` 等）在开 PR 时会报红；
-> - 推到 `main` 会触发 `ci-master.yml`、`sandbox.yml`、`release.yml`、`release-vendor.yml`、`e2e.yml`、`node-addon-system.yml`、`pr-check-on-base-branch.yml`。
+> **警示：上游那 31 个 workflow 现在会被真正读取，并且已决定保持不动。** 它们原本就是为 DeepSeek 的自托管 runner 写的（`dsh-win-ci`、`dsh-mac-package-trial`、`blacksmith-*`…），我们这边没有这些 runner，所以会报红：
+> - 推到 `main` 触发 7 个：`ci-master.yml`、`sandbox.yml`、`e2e.yml`、`release.yml`、`release-vendor.yml`、`node-addon-system.yml`、`pr-check-on-base-branch.yml`；
+> - 开 PR 触发 11 个（`ci.yml`、`ci-windows.yml`、`ci-python.yml`、`expected-filenames.yml`、`build-preview-cloudflare.yml`、`issue-lifecycle.yml`、`issue-policy.yml`、`pr-check-on-head-branch.yml`、`pr-check-after-approve.yml`、`weighted-approval.yml`、`weighted-approval-review-event.yml`）；
+> - `e2e.yml` 另有 nightly schedule。
 >
-> 它们与桌面打包互不影响（失败不会拦推送），但如果不想看到一串红叉，在 GitHub 的 **Actions 页面**把对应 workflow 逐个 **Disable workflow** 即可；彻底的办法是删掉这些上游 `.yml`（注意 `scripts/*-workflow.spec.ts` 会读取它们做断言，删之前先删/改对应 spec）。
+> **当前决定就是让它们报红**：与桌面打包互不影响（失败不拦推送，也不会消耗托管 runner 分钟——job 找不到匹配的自托管 runner 只会排队后失败）。要改这个决定：
+> 1. **轻量**：GitHub 的 **Actions 页面**逐个 **Disable workflow**（文件保留，想接回来再 Enable）；
+> 2. **彻底**：删掉这些 `.yml`——注意 `scripts/` 下十多个 spec（`ci-workflow.spec.ts`、`macos-package-workflow.spec.ts`、`windows-package-workflow.spec.ts`、`desktop-package-forms.spec.ts`、`desktop-package-source.spec.ts`、`desktop-publish-workflow.spec.ts`、`preview-workflow.spec.ts`、`ci-compatible-selfhosted.spec.ts`、`tests/ci-*.spec.ts`、`cua-helper/*.spec.ts` 等）会读取它们做断言，删之前要连着删/改对应 spec。
+>
+> 失败的 run 会占用 Actions 存储，堆积久了需要手动清理。
 
 ---
 
@@ -66,7 +71,7 @@ wm26hua/fanyu-harness          ← 仓库根 = 代码根（package.json 在这�
 # 方式一：手动触发（推荐第一次用这个）
 #   GitHub 仓库页 → Actions → "Desktop packages (unsigned, windows + linux + macos)" → Run workflow
 
-# 方式二：推 tag
+# 方式二：推 tag（小心：会立刻开打三端，需要时再推）
 git tag fanyu-desktop-v0.2.2-rc.1
 git push origin fanyu-desktop-v0.2.2-rc.1
 ```
@@ -118,6 +123,16 @@ git push origin <split-commit>:refs/heads/main           # 或走 PR 合并
 ```
 
 工作区那边建议 `git reset --hard origin/main` 保持与远端一致——**工作区根的 `README.md`、`.gitignore`、`.gitattributes` 不属于新仓库**，仓库内的说明见 [`README.md`](./README.md)、[`FANYU.md`](./FANYU.md) 与本文件。
+
+**当前远端状态（2026-11-12 已执行）**：
+
+| 项 | 状态 |
+| --- | --- |
+| 分支 | **只有 `main`**；临时分支 `repo-root-fanyu-harness` 已删除 |
+| tag | **零个**；`fanyu-desktop-v0.2.2-rc.1` 已删除（它当时指向旧布局的提交，且匹配工作流的 tag 触发器） |
+| `main` | 强制更新为抽取后的历史（`70831883...91394ef3 (forced update)`）；旧布局的历史仍保留在工作区本地仓库 |
+
+> 注意：工作流的 tag 触发器**保留**——以后再推 `fanyu-desktop-v*` tag 会立即开打三端。只想手动触发就只走 Actions 页面的 **Run workflow**，别推 tag。
 
 推送后到 `https://github.com/wm26hua/fanyu-harness/actions` 即可看到工作流列表——**这是验证「位置修对了」的唯一可靠办法**。
 
